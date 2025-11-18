@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: Immersive_platform
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: kurukuru
+      POSTGRES_DB: Immersive_DB
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres 
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amin -d fast_api"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+volumes:
+  postgres_data:
