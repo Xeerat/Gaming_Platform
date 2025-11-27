@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Пиксельный редактор карты</title>
+<style>
+  #canvas {
+    border: 1px solid black;
+    image-rendering: pixelated; /* важен для маленьких пикселей */
+  }
+  .tile-palette {
+    display: flex;
+    margin-bottom: 10px;
+  }
+  .tile {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #555;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+  .selected {
+    border: 2px solid red;
+  }
+</style>
+</head>
+<body>
+
+<div class="tile-palette" id="palette"></div>
+<canvas id="canvas"></canvas>
+
+<div class="tile-palette" id="palette"></div>
+<button id="saveBtn">Сохранить карту</button>
+<canvas id="canvas"></canvas>
+
+
+<script src="editor.js"></script>
+</body>
+</html>
