@@ -1,9 +1,9 @@
 /* Фиолетовая пастельная палитра */
 * {
   --purple-light: #f3e8ff;   /* светлый фон контента и кнопок */
-  --purple-mid: #a87cef;     /* основной цвет кнопок и hover */
+  --purple-mid: #b59ce1;     /* основной цвет кнопок и hover */
   --purple-strong: #7e57c2;  /* насыщенный фиолетовый для sidebar */
-  --purple-border: #d1b3ff;  /* светлая граница */
+  --purple-border: #a684e1;  /* светлая граница */
 }
 
 body{
@@ -106,8 +106,15 @@ button:hover{
     background: none;
     border: none;
     color: white;
-    font-size: 18px;
+    font-size: 15px;          
     cursor: pointer;
     float: right;
     margin-left: 10px;
+    line-height: 1;           
+    padding: 0;               
+    width: 24px;             
+    height: 24px;         
+    display: flex;           
+    align-items: center;  
+    justify-content: center; 
 }
