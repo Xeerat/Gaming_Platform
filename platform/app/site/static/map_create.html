@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Редактор карты</title>
+<style>
+body { margin:0; font-family: sans-serif; background:#f0f0f0; }
+#container { display:flex; align-items:flex-start; padding:10px; }
+#controls { margin-right:20px; }
+#palette { display:flex; flex-wrap: wrap; width:288px; margin-bottom:10px; }
+.tile { width:32px; height:32px; margin:2px; border:1px solid #555; cursor:pointer; transition:0.1s; }
+.tile:hover { transform: scale(1.1); }
+.selected { border:3px solid red; }
+button { padding:6px 12px; font-size:16px; border-radius:5px; border:1px solid #333; background:#eee; cursor:pointer; transition:0.2s; display:block; margin-bottom:5px; }
+button:hover { background:#ddd; }
+canvas { display:block; border:1px solid #000; max-width:100%; height:auto; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+</head>
+<body>
+
+<div id="container">
+    <div id="controls">
+        <div id="palette"></div>
+        <button id="saveBtn">Сохранить карту</button>
+    </div>
+    <div id="canvasWrapper"></div>
+</div>
+
+<script src="map_editor.js"></script>
+</body>
+</html>
