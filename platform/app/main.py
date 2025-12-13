@@ -75,3 +75,11 @@ async def main_paper(request: Request, success: str = None):
         "request": request,
         "success": success
     })
+
+#=========================================================
+# Страница с конструктором
+#=========================================================
+
+@app.get("/main/constructor", response_class=HTMLResponse)
+async def constructor(request: Request):
+    return templates.TemplateResponse('constructor.html', {"request": request})
