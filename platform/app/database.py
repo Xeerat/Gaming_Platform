@@ -24,11 +24,21 @@ DB_URL = get_database_url()
 #=========================================================
 
 def get_auth_data():
+    """ Функция возвращающая особые данные для генерации токена """
+    return {
+        "secret_key": getenv("SECRET_KEY"),
+        "algorithm": getenv("ALGORITHM")
+    }
+
+#=========================================================
+# Получение данных для верификации через email
+#=========================================================
+
+def get_auth_email():
+    """ Функция возвращающая особые данные для реализации email верификации """
     return {
         "email_user": getenv("EMAIL_SECRET"),
         "email_password": getenv("EMAIL_SECRET_PASS"),
         "smtp_server": getenv("SMTP_SERVER"),
-        "smtp_port": int(getenv("SMTP_PORT")),
-        "secret_key": getenv("SECRET_KEY"),
-        "algorithm": getenv("ALGORITHM")
+        "smtp_port": int(getenv("SMTP_PORT"))
     }

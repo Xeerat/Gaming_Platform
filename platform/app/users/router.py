@@ -1,15 +1,10 @@
-from fastapi import APIRouter, Response, Form, Request, Depends
+from fastapi import APIRouter, Form, Request
 from fastapi.responses import RedirectResponse
 from pydantic import EmailStr
 
-from app.dao.dao_models import UsersDAO
+from app.dao.dao_models import UsersDAO, TemporaryDAO
 from app.users.validation import SUserRegister, SUserAuth
 import app.users.auth as auth
-
-from app.users.dependencies import get_current_user, User, get_auth_data
-
-
-from jose import jwt, JWTError
 
 
 # Создаем объект, который будет содержать все маршруты
@@ -23,7 +18,6 @@ router = APIRouter(prefix='/auth', tags=['Auth'])
 # post обозначает, что функция создает и изменяет данные на сервере
 @router.post("/register/")
 async def register_user(
-    response: Response, 
     email: EmailStr = Form(...),
     password: str = Form(...),
     username: str = Form(...),
@@ -68,22 +62,18 @@ async def register_user(
     # Хешируем пароль
     user_dict['password'] = auth.get_password_hash(user_data.password)
     # После добавления пользователя в базу
-    user = await UsersDAO.add(**user_dict)
+    user = await TemporaryDAO.add(**user_dict)
 
-    # 1. Генерация токена для подтверждения email
-    email_token = auth.generate_email_token(user.email)
-
-    # 2. Отправка письма с токеном
+    # Генерация токена для подтверждения email
+    email_token = auth.create_access_token(
+        {"sub": str(user.id), "email": user.email}, email=True
+    )
+    
+    # Отправка письма на почту пользователя
     auth.send_verification_email(user.email, email_token)
 
-    # 3. Создание access_token для cookie (если логиним сразу)
-    access_token = auth.create_access_token({"sub": str(user.id), "email": user.email})
-    response = RedirectResponse(
-        url="/main/?success=Вы+успешно+зарегистрированы!", 
-        status_code=303
-    )
-    response.set_cookie(key="users_access_token", value=access_token, httponly=True)
-    return response
+    # Переходим на страницу ожидания подтверждения
+    return RedirectResponse("/auth/verify-email", status_code=303)
 
 #=========================================================
 # Маршрут /auth/login/
@@ -91,7 +81,6 @@ async def register_user(
 
 @router.post("/login/")
 async def auth_user(
-    response: Response,
     email: EmailStr = Form(...),
     password: str = Form(...)
 ) -> dict:
@@ -124,7 +113,7 @@ async def auth_user(
 #=========================================================
 
 @router.get("/logout/")
-async def logout_user(response: Response):
+async def logout_user():
     """ Функция для разлогинивания пользователя """
     # Перенаправляем пользователя на страницу авторизации
     response = RedirectResponse(url='/auth/login/', status_code=303)
@@ -178,27 +167,32 @@ async def dell_user(request: Request):
     response.delete_cookie(key="users_access_token")
     return response
     
+#=========================================================
+# Маршрут /auth/verify-email
+#=========================================================
 
+@router.post("/verify-email")
+async def verify_email(token: str = Form(...)):
+    """ Функция для подтверждения через email """
+    # Расшифровываем токен
+    data = auth.decode_access_token(token)
+    # Находим данные пользователя во временной базе данных
+    user = await TemporaryDAO.find_one_or_none(email=data['email'])
+    # Добавляем нового пользователя в основную базу данных
+    user_dict = {
+        "username": user.username,
+        "email": user.email,
+        "password": user.password
+    }
+    user = await UsersDAO.add(**user_dict)
 
-
-@router.get("/verify-email")
-async def verify_email(token: str):
-    auth_data = get_auth_data()
-    try:
-        data = jwt.decode(token, auth_data["secret_key"], algorithms=[auth_data["algorithm"]])
-        email = data["email"]
-
-        # Обновляем поле is_verified = True
-        success = await auth.mark_user_email_verified(email)
-
-        if success:
-            return {"message": "Email успешно подтверждён!"}
-        else:
-            return {"error": "Пользователь не найден"}
-
-    except jwt.ExpiredSignatureError:
-        return {"error": "Ссылка устарела"}
-
-    except JWTError:
-        return {"error": "Неверный токен"}
-
+    # Генерация токена для куки
+    access_token = auth.create_access_token({"sub": str(user.id), "email": user.email})
+    # Переход на основную страницу
+    response = RedirectResponse(
+        url="/main/?success=Вы+успешно+зарегистрированы!", 
+        status_code=303
+    )
+    # Задаем куки
+    response.set_cookie(key="users_access_token", value=access_token, httponly=True)
+    return response

@@ -5,7 +5,7 @@ from sqlalchemy.engine import Connection
 from alembic import context
 from alembic.config import Config
 from app.database import DB_URL
-from app.migration.models import Base, User
+from app.migration.models import Base, User, Temporary
 import asyncio
 
 from pathlib import Path

@@ -19,9 +19,9 @@ app = FastAPI()
 # Подключаем все маршруты пользователя к главному объекту 
 app.include_router(router_users)
 # Добавляем статические файлы на сайт
-app.mount('/static', StaticFiles(directory="app/site/static"), name="static")
+app.mount('/static', StaticFiles(directory="site/static"), name="static")
 # Показываем где искать HTML файлы
-templates = Jinja2Templates(directory="app/site/templates")
+templates = Jinja2Templates(directory="site/templates")
 
 #=========================================================
 # Страница регистрации
@@ -55,6 +55,17 @@ async def login(request: Request):
     return templates.TemplateResponse('terms_use.html', {"request": request})
 
 #=========================================================
+# Страница подтверждения почты
+#=========================================================
+
+@app.get("/auth/verify-email", response_class=HTMLResponse)
+async def verify_email(request: Request, token: str = None):
+    return templates.TemplateResponse('verify_email.html', {
+        "request": request, 
+        "token": token
+    })
+
+#=========================================================
 # Основная страница после входа
 #=========================================================
 
@@ -64,3 +75,11 @@ async def main_paper(request: Request, success: str = None):
         "request": request,
         "success": success
     })
+
+#=========================================================
+# Страница с конструктором
+#=========================================================
+
+@app.get("/main/constructor", response_class=HTMLResponse)
+async def constructor(request: Request):
+    return templates.TemplateResponse('constructor.html', {"request": request})

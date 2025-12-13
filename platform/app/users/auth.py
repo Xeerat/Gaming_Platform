@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt
 
 from app.dao.dao_models import UsersDAO
-from app.database import get_auth_data
+from app.database import get_auth_data, get_auth_email
 
 from email.mime.text import MIMEText
 import smtplib
@@ -13,11 +13,16 @@ import smtplib
 # Шифрование токена
 #=========================================================
 
-def create_access_token(data: dict) -> str:
+def create_access_token(data: dict, email: bool = False) -> str:
     """ Функция для создания токенов для пользователей """
     to_encode = data.copy()
-    # Ставим время действительности токена
-    expire = datetime.now(timezone.utc) + timedelta(days=30)
+    # Если нужен токен для подтверждения email
+    if email:
+        # Таймер на 15 минут
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    else:
+        # Таймер на 14 дней для обычных токенов
+        expire = datetime.now(timezone.utc) + timedelta(days=14)
     to_encode.update({"exp": expire})
 
     # Получаем особые данные
@@ -38,7 +43,12 @@ def decode_access_token(token: str) -> dict:
     # Получаем особые данные
     auth_data = get_auth_data()
     # Расшифровываем токен
-    user_data = jwt.decode(token, auth_data['secret_key'], auth_data['algorithm'])
+    try:
+        user_data = jwt.decode(token, auth_data['secret_key'], auth_data['algorithm'])
+    except jwt.ExpiredSignatureError:
+        raise ValueError("Истек срок годности токена")
+    except jwt.InvalidTokenError:
+        raise ValueError("Некорректный токен")
     return user_data
 
 #=========================================================
@@ -63,49 +73,26 @@ async def authenticate_user(email: EmailStr, password: str):
         return None
     return user
 
+#=========================================================
+# Отправка письма с подтверждением на email
+#=========================================================
 
-#=========================================================
-# Генерация токена для подтверждения email
-#=========================================================
-def generate_email_token(email: str):
-    """Создаёт JWT для подтверждения email"""
-    auth_data = get_auth_data()
-    payload = {
-        "email": email,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=24)
-    }
-    return jwt.encode(payload, auth_data["secret_key"], algorithm=auth_data["algorithm"])
-
-#=========================================================
-# Отправка письма с подтверждением email
-#=========================================================
-import smtplib
-from email.mime.text import MIMEText
-from app.database import get_auth_data  # если используешь эту функцию для секретов
-
-def send_verification_email(to_email, token):
-    auth_data = get_auth_data()  # содержит EMAIL_USER и EMAIL_PASSWORD
+def send_verification_email(email: EmailStr, token: str):
+    """ Функция для генерации и отправки сообщения с подтверждением на email """
+    # Получаем особые данные для верификации email
+    auth_data = get_auth_email()
+    # Создаем ссылку для подтверждения email
     verification_link = f"http://localhost:8000/auth/verify-email?token={token}"
-
     
-    
+    # Создаем сообщение 
     msg = MIMEText(f"Подтвердите вашу почту: {verification_link}")
     msg["Subject"] = "Подтверждение почты"
-    msg["From"] = auth_data["email_user"]         # ваш g.nsu.ru
-    msg["To"] = to_email
+    msg["From"] = auth_data["email_user"] 
+    msg["To"] = email
 
+    # Открываем безопасное соединение с google сервером почты
     with smtplib.SMTP_SSL(auth_data["smtp_server"], auth_data["smtp_port"]) as server:
+        # Авторизуемся на почте
         server.login(auth_data["email_user"], auth_data["email_password"])
+        # Отправляем созданное сообщение 
         server.send_message(msg)
-
-
-#=========================================================
-# Пометка email как подтверждённого
-#=========================================================
-
-async def mark_user_email_verified(email: str):
-    user = await UsersDAO.find_one_or_none(email=email)
-    if user:
-        await UsersDAO.update({"email": email}, is_verified=True)
-        return True
-    return False

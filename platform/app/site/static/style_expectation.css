@@ -1,0 +1,161 @@
+:root{
+    --bg-1: #2b0b4a;
+    --bg-2: #58237a;
+    --bg-3: #8b4bd6;
+    --accent: #d9b3ff;
+    --glass: rgba(255,255,255,0.06);
+    --card-radius: 14px;
+  }
+
+  /* фон с мягким градиентом + легкой текстурой */
+  html,body{
+    height:100%;
+    margin:0;
+    font-family: Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    background: radial-gradient(1200px 600px at 10% 10%, rgba(139,75,214,0.14), transparent 10%),
+                radial-gradient(1000px 500px at 90% 90%, rgba(88,35,122,0.12), transparent 12%),
+                linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 40%, var(--bg-3) 100%);
+    color: #f6f3ff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* Контейнер сайта */
+  .wrap{
+    width: min(920px, 94vw);
+    padding: clamp(20px, 4vw, 44px);
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    border-radius: var(--card-radius);
+    box-shadow: 0 8px 30px rgba(17,8,35,0.55);
+    backdrop-filter: blur(6px) saturate(120%);
+    display:flex;
+    gap: 28px;
+    align-items:center;
+    justify-content:space-between;
+  }
+
+  /* Левый блок: заголовок и описание */
+  .hero {
+    flex:1 1 60%;
+    min-width: 240px;
+  }
+  .title{
+    margin:0 0 8px 0;
+    font-size: clamp(20px, 3.4vw, 34px);
+    line-height:1.05;
+    letter-spacing: -0.02em;
+  }
+  .subtitle{
+    margin:0 0 18px 0;
+    color: rgba(255,255,255,0.85);
+    opacity:0.9;
+  }
+
+  /* Правый блок: демо загрузки */
+  .demo {
+    display:flex;
+    gap:18px;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 240px;
+    padding:18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  /* Контейнер точек загрузки */
+  .dots {
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* Каждая точка — круг */
+  .dot {
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, #ffffffaa, transparent 30%),
+                linear-gradient(180deg, var(--accent), #b08cff);
+    transform-origin:center;
+    box-shadow: 0 6px 16px rgba(86,20,120,0.35), inset 0 -2px 6px rgba(0,0,0,0.18);
+    opacity:0.95;
+    /* анимация по умолчанию (см. ниже) */
+    animation: dotPulse 1s infinite ease-in-out;
+  }
+
+  /* Стаггер эффект: каждая точка начинает в разное время */
+  .dot:nth-child(1){ animation-delay: 0s;  }
+  .dot:nth-child(2){ animation-delay: 0.15s; }
+  .dot:nth-child(3){ animation-delay: 0.3s;  }
+
+  /* Плавное появление и "пульс" */
+  @keyframes dotPulse {
+    0%   { transform: translateY(0) scale(0.9); opacity:0.6; }
+    40%  { transform: translateY(-8px) scale(1.12); opacity:1; }
+    80%  { transform: translateY(0) scale(0.98); opacity:0.8; }
+    100% { transform: translateY(0) scale(0.9); opacity:0.6; }
+  }
+
+  /* Подпись под демо */
+  .demo-caption{
+    font-size:13px;
+    color: rgba(255,255,255,0.8);
+    text-align:center;
+    margin-top:8px;
+  }
+
+  /* Кнопка воспроизведения — демонстрирует состояние загрузки/готовности */
+  .btn {
+    margin-left: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #fff;
+    font-weight:600;
+    cursor:pointer;
+    box-shadow: 0 6px 18px rgba(70,20,120,0.18);
+  }
+  .btn:active{ transform: translateY(1px); }
+
+
+  /* Состояние "загрузка завершена" — точки превращаются в галочку */
+  .dots.ready { gap: 0; }
+  .dots.ready .dot {
+    width:0;
+    height:0;
+    margin:0;
+    padding:0;
+    box-shadow:none;
+    background:transparent;
+    animation:none;
+  }
+  .check {
+    display:none;
+    font-size:20px;
+    line-height:1;
+    color: #fff;
+  }
+  .check.show { display:inline-block; transform: scale(0.9); animation: checkPop 320ms cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes checkPop {
+    from { transform: scale(0.3); opacity:0; }
+    to   { transform: scale(1); opacity:1; }
+  }
+
+  /* Уважение к пользователю, который снизил движение */
+  @media (prefers-reduced-motion: reduce) {
+    .dot { animation: none; transform: none; }
+    .check { animation: none; }
+  }
+
+  /* Адаптив — на узких экранах вертикальная раскладка */
+  @media (max-width:700px){
+    .wrap{ flex-direction:column; align-items:stretch; gap:16px; }
+    .demo{ flex:unset; width:100%; }
+  }

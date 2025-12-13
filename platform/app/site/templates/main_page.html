@@ -28,7 +28,9 @@
     <form id="deleteForm" action="/auth/del/" method="post"></form>
     <button type="button" onclick="confirmDelete()">Удалить аккаунт</button>
     
-    <button>Конструктор</button>
+    <form id="constructor" action="/main/constructor" method="get"></form>
+    <button type="button" onclick="confirmConstructor()">Конструктор</button>
+
     <button>Настройки</button>
     <button onclick="confirmLogout()" class="logout-btn">Выход из аккаунта</button>
   </div>
@@ -51,6 +53,17 @@
       {
         // Ищем элемент по id и отправляем запрос через него
         document.getElementById('deleteForm').submit();
+      }
+  }
+  </script>
+
+  <script>
+  function confirmConstructor() 
+  {
+      if (confirm("Вы желаете перейти в конструктор?")) 
+      {
+        // Ищем элемент по id и отправляем запрос через него
+        document.getElementById('constructor').submit();
       }
   }
   </script>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход в систему</title>
+  <link rel="stylesheet" href="/static/style_expectation.css">
+</head>
+<body>
+   <form action="/auth/verify-email" method="post" id="verify-email">
+    <input type="hidden" name="token" value="{{ token }}">
+  </form>
+
+  {% if token %}
+  <script>
+    (function()
+    {
+      document.getElementById('verify-email').submit();
+    })();
+  </script>
+  {% endif %}
+
+  <main class="wrap" role="main">
+    <section class="hero" aria-labelledby="site-title">
+      <div class="verify-container">
+    <h1 class="verify-text">На вашу почту отправлено письмо для подтверждения</h1>
+  </div>
+    </section>
+
+    <aside class="demo" aria-label="Демонстрация индикатора загрузки">
+      <div>
+        <div id="dots" class="dots" aria-hidden="false" aria-live="polite">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="dot" aria-hidden="true"></span>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:center; margin-top:10px;">
+          <span id="check" class="check" aria-hidden="true">✔️</span>
+        </div>
+
+        <div class="demo-caption" id="status" style="margin-top:8px;">Статус: <strong id="status-text">ожидание</strong></div>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>
