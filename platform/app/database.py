@@ -7,7 +7,6 @@ from sqlalchemy import pool
 
 load_dotenv()
 
-
 def get_database_url() -> str:
     """
     Формирует URL для асинхронного соединения с базой данных.

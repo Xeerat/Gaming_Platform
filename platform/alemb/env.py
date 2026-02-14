@@ -13,11 +13,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-
 target_metadata = Base.metadata
 
 
-def run_offline_migrations() -> None:
+def run_offline_migrations():
     """Выполняет оффлайн миграцию базы данных."""
 
     context.configure(
@@ -30,7 +29,7 @@ def run_offline_migrations() -> None:
         context.run_migrations()
 
 
-def run_online_migrations(connection: Connection) -> None:
+def run_online_migrations(connection: Connection):
     """
     Выполняет онлайн миграцию базы данных.
 
@@ -48,7 +47,7 @@ def run_online_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 
-async def run_async_migrations() -> None:
+async def run_async_migrations():
     """Выполняет онлайн миграцию в асинхронном режиме."""
 
     async with async_engine.connect() as connection:

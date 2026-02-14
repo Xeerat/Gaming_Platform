@@ -1,9 +1,9 @@
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 from sqlalchemy import update as sqlalchemy_update, delete as sqlalchemy_delete
-from app.migration.models import User, Maps, Character, Temporary
+from migration.models import User
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from app.database import DB_URL
+from database import DB_URL
 
 #=========================================================
 # Создание асинхронных сессий 
@@ -101,27 +101,3 @@ class BaseDAO:
 class UsersDAO(BaseDAO):
     """ Класс представляющий взаимодействие с данными таблицы users """
     model = User
-
-#=========================================================
-# Класс для работы с данными таблицы temporary
-#=========================================================
-
-class TemporaryDAO(BaseDAO):
-    """ Класс представляющий взаимодействие с данными таблицы users """
-    model = Temporary
-
-#=========================================================
-# Класс для работы с данными таблицы maps
-#=========================================================
-
-class MapsDAO(BaseDAO):
-    """ Класс представляющий взаимодействие с данными таблицы maps """
-    model = Maps
-
-#=========================================================
-# Класс для работы с данными таблицы characters
-#=========================================================
-
-class CharacterDAO(BaseDAO):
-    """ Класс представляющий взаимодействие с данными таблицы characters """
-    model = Character

@@ -3,8 +3,8 @@ from pydantic import EmailStr
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 
-from app.dao.dao_models import UsersDAO
-from app.database import get_auth_data, get_auth_email
+from dao.dao_models import UsersDAO
+from database import get_token_data, get_email_data
 
 from email.mime.text import MIMEText
 import smtplib
@@ -26,7 +26,7 @@ def create_access_token(data: dict, email: bool = False) -> str:
     to_encode.update({"exp": expire})
 
     # Получаем особые данные
-    auth_data = get_auth_data()
+    auth_data = get_token_data()
     try:
         # Создаем токен для пользователя
         encode_jwt = jwt.encode(to_encode, auth_data['secret_key'], algorithm=auth_data['algorithm'])
@@ -41,7 +41,7 @@ def create_access_token(data: dict, email: bool = False) -> str:
 def decode_access_token(token: str) -> dict:
     """ Функция для расшифровки токена """
     # Получаем особые данные
-    auth_data = get_auth_data()
+    auth_data = get_token_data()
     # Расшифровываем токен
     try:
         user_data = jwt.decode(token, auth_data['secret_key'], auth_data['algorithm'])
@@ -80,7 +80,7 @@ async def authenticate_user(email: EmailStr, password: str):
 def send_verification_email(email: EmailStr, token: str):
     """ Функция для генерации и отправки сообщения с подтверждением на email """
     # Получаем особые данные для верификации email
-    auth_data = get_auth_email()
+    auth_data = get_email_data()
     # Создаем ссылку для подтверждения email
     verification_link = f"http://localhost:8000/auth/verify-email?token={token}"
     

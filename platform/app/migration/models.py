@@ -23,18 +23,4 @@ class User(Base):
     register_at: Mapped[datetime] = mapped_column(
         server_default=text("TIMEZONE('utc', now())")
     )
-
-    extend_existing = True
-
-
-class Temporary(Base):
-    """ORM-модель таблицы temporary."""
-
-    __tablename__ = "temporary"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
-    email: Mapped[str] = mapped_column(unique=True)
-    password: Mapped[str] = mapped_column()
-
     extend_existing = True
