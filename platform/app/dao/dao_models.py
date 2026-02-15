@@ -1,103 +1,174 @@
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.future import select
-from sqlalchemy import update as sqlalchemy_update, delete as sqlalchemy_delete
+from sqlalchemy import select, update, delete, insert
+from sqlalchemy.sql import ClauseElement
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from pydantic import EmailStr
+
 from migration.models import User
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from database import DB_URL
+from database import async_session_maker
 
-#=========================================================
-# Создание асинхронных сессий 
-#=========================================================
+from typing import Generic, TypeVar, Type
 
-# Создаем асинхронный движок подключенный к базе данных
-engine = create_async_engine(DB_URL)
-# Создаем фабрику для создания асинхронных сессий
-async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
-#=========================================================
-# Базовый класс для работы с данными
-#=========================================================
+T = TypeVar("T")
 
-class BaseDAO:
-    """ Класс представляющий базовое взаимодействие с данными таблиц """
-    # У базовой DAO нет модели
-    model = None
+
+class BaseDAO(Generic[T]):
+    """Базовый класс взаимодействия с данными."""
+    
+    model: Type[T]
     
     @classmethod
-    async def find_one_or_none(cls, **filter_by):
-        """ Функция для нахождения записи по критерию """
-        # Создаем новую сессию
-        async with async_session_maker() as session:
-            # sql-запрос вида: SELECT * FROM users WHERE
-            query = select(cls.model).filter_by(**filter_by)
-            # Отправляем запрос в базу данных
-            result = await session.execute(query)
-            # Вернет либо один объект, либо None
-            return result.scalar_one_or_none()
+    async def _find_data_where(cls, *conditions: ClauseElement) -> T | None:
+        """
+        Находит данные в базе данных.
+
+        Args:
+            conditions: условия для поиска данных.
         
+        Returns:
+            Объект данных или None, если объект не найден.
+        """
 
-    @classmethod
-    async def add(cls, **values):
-        """ Функция для добавления нового объекта в базу данных """
         async with async_session_maker() as session:
-            # Создаем модель класса с переданными параметрами
-            new_instance = cls.model(**values)
-            # Добавляем изменения 
-            session.add(new_instance)
-            # Пытаемся закомитить 
-            try:
-                await session.commit()
-            # Иначе откат изменений 
-            except SQLAlchemyError as error:
-                await session.rollback()
-                raise error
-            # Для корректной работы id в таблице нужно возвращать объект
-            return new_instance
-
-
-    @classmethod
-    async def update(cls, filter_by, **values):
-        """ Функция для обновления значений объектов в базе данных """
-        async with async_session_maker() as session:
-            query = (
-                # UPDATE users
-                sqlalchemy_update(cls.model)
-                # WHERE id=5
-                .where(*[getattr(cls.model, k) == v for k, v in filter_by.items()])
-                # SET username='maria', email='m@e.com'
-                .values(**values)
-            )
+            query = select(cls.model).where(*conditions)
             result = await session.execute(query)
-            try:
-                await session.commit()
-            except SQLAlchemyError as error:
-                await session.rollback()
-                raise error
-            # Возращает количество обновленных строк
-            return result.rowcount
 
+            return result.scalars().first()
 
     @classmethod
-    async def delete(cls, delete_all: bool = False, **filter_by):
-        """ Функция для удаления объектов из базы данных """
-        if not delete_all and not filter_by:
-            raise ValueError("Необходимо указать хотя бы один параметр для удаления.")
+    async def _add_data(cls, **values) -> None:
+        """
+        Добавляет данные в базу данных.
 
-        async with async_session_maker() as session:
-            # DELETE FROM users WHERE username='maria'
-            query = sqlalchemy_delete(cls.model).filter_by(**filter_by)
-            result = await session.execute(query)
-            try:
-                await session.commit()
-            except SQLAlchemyError as error:
-                await session.rollback()
-                raise error
-            return result.rowcount
+        Args:
+            values: словарь с данными для добавления.
+                    
+                    Ключи должны соответствовать атрибутам ORM-модели.
+                    Допустимый набор полей определяется конкретным DAO.
         
-#=========================================================
-# Класс для работы с данными таблицы users
-#=========================================================
+        Raises:
+            IntegrityError - если добавляются данные, которые уже есть в базе.
+            SQLAlchemyError - если возникла ошибка при добавлении.
+        """
 
-class UsersDAO(BaseDAO):
-    """ Класс представляющий взаимодействие с данными таблицы users """
+        async with async_session_maker() as session:
+            query = insert(cls.model).values(**values)
+            try:
+                await session.execute(query)
+                await session.commit()
+            except IntegrityError as error:
+                await session.rollback()
+                raise error
+            except SQLAlchemyError as error:
+                await session.rollback()
+                raise error
+
+    @classmethod
+    async def _update_data_where(
+        cls, 
+        *conditions: ClauseElement, 
+        **values
+    ) -> None:
+        """
+        Обновляет данные в базе данных.
+
+        Args:
+            conditions: набор условий.
+            values: словарь с полями и значениями для обновления.
+                    
+                    Ключи должны соответствовать атрибутам ORM-модели.
+                    Допустимый набор полей определяется конкретным DAO.
+
+        Raises:
+            SQLAlchemyError - если возникла ошибка при обновлении.
+        """
+
+        async with async_session_maker() as session:
+            query = update(cls.model).where(*conditions).values(**values)
+            try:
+                await session.execute(query)
+                await session.commit()
+            except SQLAlchemyError as error:
+                await session.rollback()
+                raise error
+
+    @classmethod
+    async def _delete_data_where(cls, *conditions: ClauseElement) -> None:
+        """
+        Удаляет данные из базы данных.
+
+        Args:
+            conditions: набор условий.
+        
+        Raises:
+            SQLAlchemyError - если возникла ошибка при удалении.
+        """
+
+        async with async_session_maker() as session:
+            query = delete(cls.model).where(*conditions)
+            try:
+                await session.execute(query)
+                await session.commit()
+            except SQLAlchemyError as error:
+                await session.rollback()
+                raise error
+        
+        
+class UsersDAO(BaseDAO[User]):
+    """Класс взаимодействия с данными таблицы users.""" 
+
     model = User
+
+    @classmethod
+    async def add_user(
+        cls, 
+        username: str, 
+        password: str, 
+        email: EmailStr
+    ) -> None:
+        """
+        Добавляет пользователя в базу данных.
+
+        Args:
+            username: имя пользователя.
+            password: хэшированный пароль пользователя.
+            email: электронная почта пользователя.
+
+        Raises:
+            IntegrityError - если добавляются данные, которые уже есть в базе.
+            SQLAlchemyError - если возникла ошибка при добавлении. 
+        """
+
+        await super()._add_data(
+            username=username,
+            email=email,
+            password=password,
+        )
+
+    @classmethod
+    async def find_user(cls, email: EmailStr) -> User | None:
+        """
+        Находит пользователя в базе данных.
+
+        Args: 
+            email: электронная почта пользователя.
+        
+        Returns:
+            Объект пользователя или None, если пользователь не найден.
+        """
+
+        return await super()._find_data_where(cls.model.email == email)
+    
+    @classmethod
+    async def delete_user(cls, email: EmailStr) -> None:
+        """
+        Удаляют пользователя из базы данных.
+
+        Args:
+            email: электронная почта пользователя.
+        
+        Raises:
+            SQLAlchemyError - если при удалении возникла ошибка.
+        """
+        
+        await super()._delete_data_where(cls.model.email == email)

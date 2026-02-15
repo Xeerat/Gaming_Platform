@@ -1,98 +1,127 @@
 from passlib.context import CryptContext
 from pydantic import EmailStr
-from datetime import datetime, timedelta, timezone
 from jose import jwt
-
-from dao.dao_models import UsersDAO
-from database import get_token_data, get_email_data
-
+from jose.exceptions import ExpiredSignatureError, JWTError
 from email.mime.text import MIMEText
-import smtplib
 
-#=========================================================
-# Шифрование токена
-#=========================================================
+from datetime import datetime, timedelta, timezone
+from aiosmtplib import SMTP
 
-def create_access_token(data: dict, email: bool = False) -> str:
-    """ Функция для создания токенов для пользователей """
-    to_encode = data.copy()
-    # Если нужен токен для подтверждения email
-    if email:
-        # Таймер на 15 минут
+from database import TOKEN_DATA, EMAIL_DATA
+
+
+def create_access_token(email: EmailStr, for_email: bool = False) -> str:
+    """
+    Создает токен для пользователя.
+
+    Args:
+        email: электронная почта пользователя.
+        for_email: флаг для определения времени действия токена.
+                Если True, то время действия 15 минут.
+                Если False, то время действия 5 дней.
+    
+    Returns:
+        Токен для пользователя.
+    """
+
+    if for_email:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     else:
-        # Таймер на 14 дней для обычных токенов
-        expire = datetime.now(timezone.utc) + timedelta(days=14)
-    to_encode.update({"exp": expire})
+        expire = datetime.now(timezone.utc) + timedelta(days=5)
 
-    # Получаем особые данные
-    auth_data = get_token_data()
-    try:
-        # Создаем токен для пользователя
-        encode_jwt = jwt.encode(to_encode, auth_data['secret_key'], algorithm=auth_data['algorithm'])
-        return encode_jwt
-    except Exception as e:
-        raise ValueError(f"Не удалось создать токен: {e}")
+    data = {"exp": expire, "email": email}
+    token = jwt.encode(
+        data, 
+        key=TOKEN_DATA['secret_key'],
+        algorithm=TOKEN_DATA['algorithm'],
+    )
 
-#=========================================================
-# Расшифровка токена
-#=========================================================
+    return token
+
 
 def decode_access_token(token: str) -> dict:
-    """ Функция для расшифровки токена """
-    # Получаем особые данные
-    auth_data = get_token_data()
-    # Расшифровываем токен
+    """
+    Расшифровывает токен пользователя.
+    
+    Args:
+        token: токен пользователя.
+    
+    Returns:
+        Словарь с почтой пользователя. Ключ "email".
+    
+    Raises:
+        ValueError - если с токеном какая то проблема.        
+    """
+
     try:
-        user_data = jwt.decode(token, auth_data['secret_key'], auth_data['algorithm'])
-    except jwt.ExpiredSignatureError:
-        raise ValueError("Истек срок годности токена")
-    except jwt.InvalidTokenError:
-        raise ValueError("Некорректный токен")
+        user_data = jwt.decode(
+            token,
+            TOKEN_DATA['secret_key'], 
+            TOKEN_DATA['algorithm'],
+        )
+    except ExpiredSignatureError:
+        raise ValueError("Истек срок годности токена.")
+    except JWTError:
+        raise ValueError("Невалидный токен.")
+
     return user_data
 
-#=========================================================
-# Хеширование пароля
-#=========================================================
 
-# Создаем объект для хеширования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def get_password_hash(password: str) -> str:
-    """ Функция для хеширования паролей пользователей """
+    """
+    Хэширует пароль пользователя.
+
+    Args:
+        password: пароль пользователя.
+    
+    Returns:
+        Хэш пароля.
+    """
+
     return pwd_context.hash(password)
 
-#=========================================================
-# Аутентификация
-#=========================================================
 
-async def authenticate_user(email: EmailStr, password: str):
-    """ Функция для проверки существования пользователя """
-    user = await UsersDAO.find_one_or_none(email=email)
-    if not user or pwd_context.verify(password, user.password) is False:
-        return None
-    return user
+def verify_password(password: str, hash: str) -> bool:
+    """
+    Сравнивает введённый пользователем пароль с настоящим.
 
-#=========================================================
-# Отправка письма с подтверждением на email
-#=========================================================
-
-def send_verification_email(email: EmailStr, token: str):
-    """ Функция для генерации и отправки сообщения с подтверждением на email """
-    # Получаем особые данные для верификации email
-    auth_data = get_email_data()
-    # Создаем ссылку для подтверждения email
-    verification_link = f"http://localhost:8000/auth/verify-email?token={token}"
+    Args:
+        password: пароль введённый пользователем.
+        hash: хэш настоящего пароля пользователя.
     
-    # Создаем сообщение 
-    msg = MIMEText(f"Подтвердите вашу почту: {verification_link}")
+    Returns:
+        True - если пароль совпал, False иначе.
+    """
+
+    return pwd_context.verify(password, hash)
+
+
+async def send_verification_email(email: EmailStr) -> None:
+    """
+    Отправляет письмо верификации на почту пользователя.
+
+    Args:
+        email: электронная почта пользователя.
+    """
+
+    token = create_access_token(email=email, for_email=True)
+    link = f"http://localhost:8000/auth/verify-email?token={token}"
+
+    msg = MIMEText(f"Подтвердите вашу почту: {link}")
     msg["Subject"] = "Подтверждение почты"
-    msg["From"] = auth_data["email_user"] 
+    msg["From"] = EMAIL_DATA["platform_email"] 
     msg["To"] = email
 
-    # Открываем безопасное соединение с google сервером почты
-    with smtplib.SMTP_SSL(auth_data["smtp_server"], auth_data["smtp_port"]) as server:
-        # Авторизуемся на почте
-        server.login(auth_data["email_user"], auth_data["email_password"])
-        # Отправляем созданное сообщение 
-        server.send_message(msg)
+    async with SMTP(
+        hostname=EMAIL_DATA["smtp_server"],
+        port=EMAIL_DATA["smtp_port"],
+        use_tls=True
+    ) as server:
+        await server.login(
+            EMAIL_DATA["platform_email"], 
+            EMAIL_DATA["platform_password"],
+        )
+        await server.send_message(msg)

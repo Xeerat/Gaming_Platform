@@ -1,10 +1,10 @@
-from pydantic import EmailStr, model_validator
+from pydantic import BaseModel, EmailStr, model_validator
 from fastapi import Form 
-from fastapi.responses import RedirectResponse
+
 from dataclasses import dataclass
 
-@dataclass
-class SUserRegister:
+
+class SUserRegister(BaseModel):
     """Валидация данных при регистрации."""
 
     email: EmailStr = Form(
@@ -21,13 +21,13 @@ class SUserRegister:
         ...,
         min_length=8, 
         max_length=15, 
-        description="Пароль"
+        description="Пароль, от 8 до 15 знаков"
     )
     confirm_password: str = Form(
         ..., 
         min_length=8, 
         max_length=15, 
-        description="Пароль, от 8 до 15 знаков"
+        description="Повторный пароль, от 8 до 15 знаков"
     )
 
     @model_validator(mode="after")
@@ -35,18 +35,21 @@ class SUserRegister:
         """Проверяет совпадение паролей."""
         
         if self.password != self.confirm_password:
-            return RedirectResponse(
-                "/auth/register/?error=Пароли+не+совпадают!",
-                status_code=303
-            )
+            raise ValueError("Пароли не совпадают")
         return self
 
 
-#=========================================================
-# Проверка валидности при авторизации
-#=========================================================
-
+@dataclass
 class SUserAuth:
-    """ Класс проверки валидности данных при авторизации """
-    email: EmailStr = Form(..., description="Электронная почта")
-    password: str = Form(..., min_length=8, max_length=15, description="Пароль, от 8 до 15 знаков")
+    """Проверка валидности данных при аутентификации."""
+    
+    email: EmailStr = Form(
+        ..., 
+        description="Электронная почта",
+    )
+    password: str = Form(
+        ..., 
+        min_length=8, 
+        max_length=15, 
+        description="Пароль, от 8 до 15 знаков",
+    )

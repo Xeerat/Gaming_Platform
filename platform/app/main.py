@@ -37,7 +37,7 @@ def load_page_register(request: Request, error: Optional[str] = None):
 def load_page_login(
     request: Request, 
     success: Optional[str] = None, 
-    error: Optional[str] = None
+    error: Optional[str] = None,
 ):
     """
     Загружает страницу аутентификации.
@@ -59,7 +59,7 @@ def load_page_login(
 
 @app.get("/auth/register/terms", response_class=HTMLResponse)
 def load_page_terms(request: Request):
-    """Загружает страницу с условиями пользования."""
+    """Загружает страницу с условиями использования."""
 
     return templates.TemplateResponse(
         'terms_use.html', 
@@ -70,7 +70,7 @@ def load_page_terms(request: Request):
 
 
 @app.get("/auth/verify-email", response_class=HTMLResponse)
-def load_page_verify_email(request: Request, token: str):
+def load_page_verify_email(request: Request, token: str = None):
     """Загружает страницу подтверждения email."""
 
     return templates.TemplateResponse(
