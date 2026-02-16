@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: platform_app
+    restart: unless-stopped
+    volumes:
+      - ./app:/app  # для разработки
+      - ./logs:/app/logs
+
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    networks:
+      - platform_network
+
+  db:
+    image: postgres:15-alpine
+    container_name: platform_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - platform_network
+
+networks:
+  platform_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
