@@ -1,7 +1,6 @@
 from passlib.context import CryptContext
 from pydantic import EmailStr
 from jose import jwt
-from jose.exceptions import ExpiredSignatureError, JWTError
 from email.mime.text import MIMEText
 
 from datetime import datetime, timedelta, timezone
@@ -50,21 +49,15 @@ def decode_access_token(token: str) -> dict:
         Словарь с почтой пользователя. Ключ "email".
     
     Raises:
-        ValueError - если с токеном какая то проблема.        
+        ExpiredSignatureError - если у токена истек срок годности.
+        JWTError - если с токеном какая то проблема.
     """
 
-    try:
-        user_data = jwt.decode(
-            token,
-            TOKEN_DATA['secret_key'], 
-            TOKEN_DATA['algorithm'],
-        )
-    except ExpiredSignatureError:
-        raise ValueError("Истек срок годности токена.")
-    except JWTError:
-        raise ValueError("Невалидный токен.")
-
-    return user_data
+    return jwt.decode(
+        token,
+        TOKEN_DATA['secret_key'], 
+        TOKEN_DATA['algorithm'],
+    )
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

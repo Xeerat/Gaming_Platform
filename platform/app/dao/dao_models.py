@@ -93,12 +93,15 @@ class BaseDAO(Generic[T]):
                 raise error
 
     @classmethod
-    async def _delete_data_where(cls, *conditions: ClauseElement) -> None:
+    async def _delete_data_where(cls, *conditions: ClauseElement) -> bool:
         """
         Удаляет данные из базы данных.
 
         Args:
             conditions: набор условий.
+        
+        Returns:
+            True - если данные получилось удалить, иначе False.
         
         Raises:
             SQLAlchemyError - если возникла ошибка при удалении.
@@ -107,11 +110,13 @@ class BaseDAO(Generic[T]):
         async with async_session_maker() as session:
             query = delete(cls.model).where(*conditions)
             try:
-                await session.execute(query)
+                result = await session.execute(query)
                 await session.commit()
             except SQLAlchemyError as error:
                 await session.rollback()
                 raise error
+            
+            return result.rowcount > 0
         
         
 class UsersDAO(BaseDAO[User]):
@@ -166,9 +171,12 @@ class UsersDAO(BaseDAO[User]):
 
         Args:
             email: электронная почта пользователя.
-        
+    
+        Returns:
+            True - если получилось удалить пользователя, иначе False.
+            
         Raises:
             SQLAlchemyError - если при удалении возникла ошибка.
         """
         
-        await super()._delete_data_where(cls.model.email == email)
+        return await super()._delete_data_where(cls.model.email == email)
