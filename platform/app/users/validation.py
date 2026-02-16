@@ -1,22 +1,55 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, model_validator
 from fastapi import Form 
 
-#=========================================================
-# Проверка валидности при регистрации
-#=========================================================
+from dataclasses import dataclass
+
 
 class SUserRegister(BaseModel):
-    """ Класс проверки валидности данных при регистрации """
-    email: EmailStr = Form(..., description="Электронная почта")
-    password: str = Form(..., min_length=8, max_length=15, description="Пароль, от 8 до 15 знаков")
-    username: str = Form(..., min_length=3, max_length=15, description="Username, от 3 до 15 символов")
-    confirm_password: str = Form(..., min_length=8, max_length=15, description="Пароль, от 8 до 15 знаков")
+    """Валидация данных при регистрации."""
 
-#=========================================================
-# Проверка валидности при авторизации
-#=========================================================
+    email: EmailStr = Form(
+        ..., 
+        description="Электронная почта"
+    )
+    username: str = Form(
+        ..., 
+        min_length=3, 
+        max_length=15, 
+        description="Username, от 3 до 15 символов"
+    )
+    password: str = Form(
+        ...,
+        min_length=8, 
+        max_length=15, 
+        description="Пароль, от 8 до 15 знаков"
+    )
+    confirm_password: str = Form(
+        ..., 
+        min_length=8, 
+        max_length=15, 
+        description="Повторный пароль, от 8 до 15 знаков"
+    )
 
-class SUserAuth(BaseModel):
-    """ Класс проверки валидности данных при авторизации """
-    email: EmailStr = Form(..., description="Электронная почта")
-    password: str = Form(..., min_length=8, max_length=15, description="Пароль, от 8 до 15 знаков")
+    @model_validator(mode="after")
+    def match_password(self):
+        """Проверяет совпадение паролей."""
+        
+        if self.password != self.confirm_password:
+            raise ValueError("Пароли не совпадают")
+        return self
+
+
+@dataclass
+class SUserAuth:
+    """Проверка валидности данных при аутентификации."""
+    
+    email: EmailStr = Form(
+        ..., 
+        description="Электронная почта",
+    )
+    password: str = Form(
+        ..., 
+        min_length=8, 
+        max_length=15, 
+        description="Пароль, от 8 до 15 знаков",
+    )

@@ -1,198 +1,189 @@
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, Form, Request, Depends
 from fastapi.responses import RedirectResponse
-from pydantic import EmailStr
+from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from jose.exceptions import ExpiredSignatureError, JWTError
 
-from app.dao.dao_models import UsersDAO, TemporaryDAO
-from app.users.validation import SUserRegister, SUserAuth
-import app.users.auth as auth
+from dao.dao_models import UsersDAO
+from users.validation import SUserRegister, SUserAuth
+from users.auth import get_password_hash, create_access_token, verify_password
+from users.auth import decode_access_token, send_verification_email
+
+from urllib.parse import quote
 
 
-# Создаем объект, который будет содержать все маршруты
-# Они все будут начинаться с /auth
 router = APIRouter(prefix='/auth', tags=['Auth'])
 
-#=========================================================
-# Маршрут /auth/registrer/
-#=========================================================
 
-# post обозначает, что функция создает и изменяет данные на сервере
+def redirect_message(
+        url: str, 
+        message: str = "", 
+        error: bool = None, 
+        success: bool = None,
+) -> RedirectResponse:
+    """
+    Формирует и возвращает RedirectResponse.
+
+    Args:
+        url: ссылка для перехода по нужному маршруту.
+        message: сообщение которое нужно отправить по маршруту.
+        error: флаг, если нужно передать ошибку.
+        success: флаг, если нужно передать успех.
+    
+    Returns:
+        Возвращает RedirectResponse cо сформированной ссылкой.
+    """
+
+    type_message = ""
+    if error:
+        type_message = "error="
+    elif success:
+        type_message = "success="
+
+    return RedirectResponse(
+        url=f"{url}?{type_message}{quote(message)}", 
+        status_code=303,
+    )
+
+
 @router.post("/register/")
-async def register_user(
-    email: EmailStr = Form(...),
-    password: str = Form(...),
-    username: str = Form(...),
-    confirm_password: str = Form(...)
-) -> dict:
-    """ Функция для регистрации пользователя """
-    # Проверяем типы данных
-    user_data = SUserRegister(
-        email=email,
-        password=password,
-        username=username,
-        confirm_password=confirm_password
-    )
-    # Ищем пользователя по email
-    found_user = await UsersDAO.find_one_or_none(email=user_data.email)
-    # Если пользователь уже существует, то ошибка
-    if found_user:
-        return RedirectResponse(
-            "/auth/register/?error=Пользователь+с+таким+email+уже+существует.",
-            status_code=303
-            )
-    
-    # Ищем пользователя по никнейму
-    found_user = await UsersDAO.find_one_or_none(username=user_data.username)
-    if found_user:
-        return RedirectResponse(
-            "/auth/register/?error=Пользователь+с+таким+именем+уже+существует!",
-            status_code=303
+async def register_user(request: Request) -> RedirectResponse:
+    """Регистрирует пользователя на платформе."""
+
+    form = await request.form()
+    try:
+        data = SUserRegister(**form)
+        await UsersDAO.add_user(
+            username=data.username,
+            email=data.email,
+            password=get_password_hash(data.password),
         )
-    
-    # Проверяем совпадение паролей
-    if user_data.password != user_data.confirm_password:
-        return RedirectResponse(
-            "/auth/register/?error=Пароли+не+совпадают!",
-            status_code=303
-        )
-    
-    # Превращаем объект SUserRegister в словарь
-    user_dict = user_data.dict()
-    # Удаляем лишний пароль перед добавлением в базу данных
-    del user_dict["confirm_password"]
-    # Хешируем пароль
-    user_dict['password'] = auth.get_password_hash(user_data.password)
-    # После добавления пользователя в базу
-    user = await TemporaryDAO.add(**user_dict)
 
-    # Генерация токена для подтверждения email
-    email_token = auth.create_access_token(
-        {"sub": str(user.id), "email": user.email}, email=True
+    except ValidationError:
+        message="Пароли не совпадают."
+
+    except IntegrityError as e:
+        if "email" in str(e.orig):
+            message="Пользователь с таким email уже существует."
+        else:
+            message="Пользователь с таким именем уже существует."
+
+    except SQLAlchemyError:
+        message="Возникла ошибка при добавлении пользователя."
+
+    else:
+        await send_verification_email(email=data.email)
+        return redirect_message(url="/auth/verify-email")
+    
+    return redirect_message(
+        url="/auth/register/",
+        message=message,
+        error=True,
     )
-    
-    # Отправка письма на почту пользователя
-    auth.send_verification_email(user.email, email_token)
 
-    # Переходим на страницу ожидания подтверждения
-    return RedirectResponse("/auth/verify-email", status_code=303)
-
-#=========================================================
-# Маршрут /auth/login/
-#=========================================================
 
 @router.post("/login/")
-async def auth_user(
-    email: EmailStr = Form(...),
-    password: str = Form(...)
-) -> dict:
-    """ Функция для авторизации пользователя """
-    # Проверяем типы данных
-    user_data = SUserAuth(
-        email=email,
-        password=password
-    )
-    # Ищем пользователя
-    user = await auth.authenticate_user(email=user_data.email, password=user_data.password)
+async def auth_user(data: SUserAuth = Depends()) -> RedirectResponse:
+    """Аутентифицирует пользователя на платформе."""
 
-    # Если пользователя нет, то уведомление о некорректности пароля и логина
-    if user is None:
-        return RedirectResponse(
-            url="/auth/login/?error=Неверная+почта+или+пароль.",
-            status_code=303
+    user = await UsersDAO.find_user(email=data.email)
+    if not user or not verify_password(data.password, user.password):
+        return redirect_message(
+            url="/auth/login/",
+            message="Неверная почта или пароль",
+            error=True,
         )
 
-    # Создаем токен для пользователя
-    access_token = auth.create_access_token({"sub": str(user.id), "email": user.email})
-    # Перенаправляем пользователя на главную страницу
-    response = RedirectResponse(url="/main/", status_code=303)
-    # Добавляем токен в cookie
-    response.set_cookie(key="users_access_token", value=access_token, httponly=True)
+    response = redirect_message(url="/main/")
+    token = create_access_token(email=data.email)
+    response.set_cookie(key="users_access_token", value=token, httponly=True)
     return response
 
-#=========================================================
-# Маршрут /auth/logout/
-#=========================================================
 
 @router.get("/logout/")
-async def logout_user():
-    """ Функция для разлогинивания пользователя """
-    # Перенаправляем пользователя на страницу авторизации
-    response = RedirectResponse(url='/auth/login/', status_code=303)
-    # Удаляем токен пользователя
+async def logout_user() -> RedirectResponse:
+    """Разлогинивает пользователя с платформы."""
+
+    response = redirect_message(url='/auth/login/')
     response.delete_cookie(key="users_access_token")
     return response
 
-#=========================================================
-# Маршрут /auth/del/
-#=========================================================
 
 @router.post("/del/")
-async def dell_user(request: Request):
-    """ Функция для удаления пользователя """
-    # Получаем токен пользователя
+async def delete_user(request: Request) -> RedirectResponse:
+    """Удаляет аккаунт пользователя с платформы."""
+
     token = request.cookies.get("users_access_token")
-    # Если токен закончился, то переход на страницу авторизации
-    if not token:
-        return RedirectResponse(
-            url="/auth/login/?error=Возникла+ошибка+при+удалении+аккаунта.",
-            status_code=303
-        )
-    # Расшифровываем токен
-    user_data = auth.decode_access_token(token)
+    try:
+        data = decode_access_token(token)
+        result = await UsersDAO.delete_user(email=data.get('email'))
+        if not result:
+            return redirect_message(
+                url="/auth/login/",
+                message="Такой пользователь не зарегистрирован.",
+                error=True,
+            )
 
-    # Ищем пользователя
-    user = await UsersDAO.find_one_or_none(email=user_data.get("email"))
-    # Если пользователя нет, то ошибка и переход на страницу авторизации
-    if user is None:
-        return RedirectResponse(
-            url="/auth/login/?error=Такой+пользователь+не+зарегистрирован.",
-            status_code=303
-        )
+    except ExpiredSignatureError:
+        message = "Истек срок годности токена."
+        url = "/main/"
 
-    # Удаляем пользователя
-    check = await UsersDAO.delete(email=user_data.get('email'))
-    # Если получилось удалить пользователя
-    if check:
-        # Перенаправляем на страницу авторизации с успехом
-        response = RedirectResponse(
-            url='/auth/login/?success=Удаление+прошло+успешно!', 
-            status_code=303
-        )
+    except JWTError:
+        message = "Пользователь не авторизован."
+        url = "/auth/login/"
+
+    except SQLAlchemyError:
+        message = "Возникла ошибка при удалении пользователя."
+        url = "/main/"
+
     else:
-        # Перенаправляем на страницу авторизации с ошибкой
-        response = RedirectResponse(
-            url='/auth/login/?error=Возникла+ошибка+при+удалении+аккаунта.', 
-            status_code=303
+        response = redirect_message(
+            url="/auth/login/",
+            message="Удаление прошло успешно!", 
+            success=True,
         )
-    # Удаляем куки
-    response.delete_cookie(key="users_access_token")
-    return response
+        response.delete_cookie(key="users_access_token")
+        return response
     
-#=========================================================
-# Маршрут /auth/verify-email
-#=========================================================
+    return redirect_message(url=url, message=message, error=True)
+    
 
 @router.post("/verify-email")
 async def verify_email(token: str = Form(...)):
-    """ Функция для подтверждения через email """
-    # Расшифровываем токен
-    data = auth.decode_access_token(token)
-    # Находим данные пользователя во временной базе данных
-    user = await TemporaryDAO.find_one_or_none(email=data['email'])
-    # Добавляем нового пользователя в основную базу данных
-    user_dict = {
-        "username": user.username,
-        "email": user.email,
-        "password": user.password
-    }
-    user = await UsersDAO.add(**user_dict)
+    """Переводит пользователя на его аккаунт после подтверждения почты."""
 
-    # Генерация токена для куки
-    access_token = auth.create_access_token({"sub": str(user.id), "email": user.email})
-    # Переход на основную страницу
-    response = RedirectResponse(
-        url="/main/?success=Вы+успешно+зарегистрированы!", 
-        status_code=303
+    try:
+        data = decode_access_token(token)
+        user = await UsersDAO.find_user(email=data["email"])
+        if not user:
+            return redirect_message(
+                url="/auth/login/",
+                message="Невалидный токен.",
+                error=True,
+            )
+
+    except ExpiredSignatureError:
+        message = "Истек срок годности токена."
+
+    except JWTError:
+        message = "Невалидный токен."
+
+    else:
+        response = redirect_message(
+            url="/main/",
+            message="Вы успешно зарегистрированы!",
+            success=True,
+        )
+        token = create_access_token(email=data["email"])
+        response.set_cookie(
+            key="users_access_token", 
+            value=token,
+            httponly=True,
+        )
+        return response
+
+    return redirect_message(
+        url="/auth/login/",
+        message=message,
+        error=True,
     )
-    # Задаем куки
-    response.set_cookie(key="users_access_token", value=access_token, httponly=True)
-    return response
