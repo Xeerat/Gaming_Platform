@@ -1,12 +1,15 @@
-version: '3.8'
 
 services:
   app:
     build: .
     container_name: platform_app
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     volumes:
-      - ./app:/app  # для разработки
+      - ./app:/app/app  # ← Изменили!
       - ./logs:/app/logs
 
     env_file:

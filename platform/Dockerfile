@@ -16,8 +16,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ .
 
 # Копирование alembic (если нужно для миграций)
-COPY alemb/ ./versions/
+COPY alemb/ ./alemb/
 COPY alembic.ini .
+
+
 
 # Команда для запуска
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
