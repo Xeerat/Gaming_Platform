@@ -22,7 +22,9 @@
   </div>
   {% endif %}
 
-  <div class="content"></div>
+  <div class="content">
+    <!-- Здесь будет основной контент страницы -->
+  </div>
 
   <div class="sidebar">
     <form id="deleteForm" action="/auth/del/" method="post"></form>
@@ -35,37 +37,25 @@
     <button onclick="confirmLogout()" class="logout-btn">Выход из аккаунта</button>
   </div>
 
-  <script>
-  function confirmLogout() 
-  {
-      // Если пользователь нажал "OK"
-      if (confirm("Вы уверены, что хотите выйти?")) 
-      {
-        window.location.href = "/auth/logout/"; 
-      } 
-  }
-  </script>
+<script>
+function confirmLogout() {
+    if (confirm("Вы уверены, что хотите выйти?")) {
+        window.location.href = "/auth/logout/";
+    }
+}
 
-  <script>
-  function confirmDelete() 
-  {
-      if (confirm("Вы уверены, что хотите удалить пользователя?")) 
-      {
-        // Ищем элемент по id и отправляем запрос через него
+function confirmDelete() {
+    if (confirm("Вы уверены, что хотите удалить пользователя?")) {
         document.getElementById('deleteForm').submit();
-      }
-  }
-  </script>
+    }
+}
 
-  <script>
-  function confirmConstructor() 
-  {
-      if (confirm("Вы желаете перейти в конструктор?")) 
-      {
-        // Ищем элемент по id и отправляем запрос через него
+function confirmConstructor() {
+    if (confirm("Вы желаете перейти в конструктор?")) {
         document.getElementById('constructor').submit();
-      }
-  }
-  </script>
+    }
+}
+</script>
+
 </body>
 </html>

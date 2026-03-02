@@ -31,16 +31,22 @@
         <span class="required">Обязательно для заполнения</span>
       </div>
 
-      <div class="form-group">
-        <label for="password">Пароль</label>
-        <input type="password" id="password" name="password" placeholder="••••••••" required>
-        <span class="password-hint">Минимум 8 символов, должны быть буквы и цифры</span>
-        <span class="required">Обязательно для заполнения</span>
-      </div>
+<div class="form-group">
+  <label for="password">Пароль <span class="required">*</span></label>
+  <div class="password-wrapper">
+    <input type="password" id="password" name="password" placeholder="••••••••" required>
+    <span class="toggle-password">👁</span>
+  </div>
+  <div class="password-hint">Минимум 8 символов, должны быть буквы и цифры</div>
+  <span class="required">Обязательно для заполнения</span>
+</div>
 
       <div class="form-group">
-        <label for="confirm_password">Подтвердите пароль</label>
-        <input type="password" id="confirm_password" name="confirm_password" placeholder="••••••••" required>
+        <label for="confirm_password">Подтвердите пароль <span class="required">*</span></label>
+        <div class="password-wrapper">
+          <input type="password" id="confirm_password" name="confirm_password" placeholder="••••••••" required>
+          <span class="toggle-password">👁</span>
+        </div>
         <span class="required">Обязательно для заполнения</span>
       </div>
 
@@ -54,5 +60,7 @@
       <a href="/auth/login/">Уже есть аккаунт? Войти</a>
     </div>
   </div>
+
+  <script src="/static/functions/eye.js"></script>
 </body>
 </html>
