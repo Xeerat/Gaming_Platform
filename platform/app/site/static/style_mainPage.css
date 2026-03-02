@@ -1,9 +1,18 @@
-/* Фиолетовая пастельная палитра */
-* {
-  --purple-light: #f3e8ff;   /* светлый фон контента и кнопок */
-  --purple-mid: #b59ce1;     /* основной цвет кнопок и hover */
-  --purple-strong: #7e57c2;  /* насыщенный фиолетовый для sidebar */
-  --purple-border: #a684e1;  /* светлая граница */
+:root{
+  /* Градиент для основного фона (светлый, диагональный) */
+  --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+  
+  /* Сайдбар */
+  --sidebar-gradient: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  
+  /* Кнопки - яркий контрастный градиент */
+  --btn-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  /* Ховер - еще ярче */
+  --btn-hover-gradient: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  
+  /* Тень для свечения */
+  --btn-glow: 0 0 20px rgba(118, 75, 162, 0.6);
 }
 
 body{
@@ -11,48 +20,50 @@ body{
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display:flex;
   height:100vh;
-  background: var(--purple-light);
+  background: var(--bg-gradient);
+  background-attachment: fixed; 
 }
 
 .content{
-  flex:3;
-  padding:30px;
-  background: var(--purple-light);
+  flex: 3;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px); 
   border-radius: 12px;
   margin: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 .sidebar{
-  flex:1;
-  background: var(--purple-strong);
-  border-left: 2px solid var(--purple-border);
-  padding:25px;
-  display:flex;
-  flex-direction:column;
-  gap:15px;
+  flex: 1;
+  background: var(--sidebar-gradient);
+  border-left: none; 
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
   border-radius: 12px 0 0 12px;
+  position: relative;
+  box-shadow: 4px 0 15px rgba(0,0,0,0.15);
 }
 
 button{
-  padding:14px;
-  border:none;
-  background: var(--purple-mid);
-  color:white;
-  border-radius:10px;
-  cursor:pointer;
-  font-size:16px;
-  font-weight:600;
-  transition:0.25s ease;
-  border: 2px solid var(--purple-strong);
+  padding: 14px;
+  background: var(--btn-gradient);
+  color: #ffffff;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 button:hover{
-  background: var(--purple-strong);
+  background: var(--btn-hover-gradient);
   transform: translateY(-2px);
-}
-
-.sidebar {
-  position: relative;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
 }
 
 .logout-btn {
@@ -62,44 +73,27 @@ button:hover{
 
   padding: 8px 14px;             
   font-size: 14px;           
-  font-weight: 600;
-
-  background: var(--purple-mid);  
-  color: white;
-  border-radius: 10px;
-  border: 2px solid var(--purple-strong);
-
-  transition: 0.25s ease;
-  cursor: pointer;
-}
-
-/* Ховер красиво вписывается */
-.logout-btn:hover {
-  background: var(--purple-strong);
-  transform: translateY(-2px);
 }
 
 .notification {
-    position: fixed;
-    top: 20px;    
-    left: 20px;         
-    padding: 16px 20px;
-    border-radius: 8px;
-    color: white;
-    font-family: Arial, sans-serif;
-    z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    max-width: 300px;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  color: white;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  max-width: 300px;
+  font-family: inherit; 
 }
 
 .notification.success {
-    background: #10b981;
-    border-left: 4px solid #059669;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
 }
 
 .notification.error {
-    background: #ef4444;
-    border-left: 4px solid #dc2626;
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
 }
 
 .close-btn {
