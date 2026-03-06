@@ -180,3 +180,12 @@ class UsersDAO(BaseDAO[User]):
         """
         
         return await super()._delete_data_where(cls.model.email == email)
+    
+    @classmethod
+    async def update_user_password(
+        cls,
+        email: EmailStr,
+        password: str
+    ) -> None:
+        await super()._update_data_where(cls.model.email == email, 
+                                         password=password)
