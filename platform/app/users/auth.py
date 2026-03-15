@@ -38,7 +38,7 @@ def create_access_token(email: EmailStr, for_email: bool = False) -> str:
     return token
 
 
-def decode_access_token(token: str) -> dict:
+def decode_access_token(token: str) -> EmailStr:
     """
     Расшифровывает токен пользователя.
     
@@ -46,18 +46,20 @@ def decode_access_token(token: str) -> dict:
         token: токен пользователя.
     
     Returns:
-        Словарь с почтой пользователя. Ключ "email".
+        Почту пользователя.
     
     Raises:
         ExpiredSignatureError - если у токена истек срок годности.
         JWTError - если с токеном какая то проблема.
     """
 
-    return jwt.decode(
+    data = jwt.decode(
         token,
         TOKEN_DATA['secret_key'], 
         TOKEN_DATA['algorithm'],
     )
+
+    return data["email"]
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -92,19 +94,28 @@ def verify_password(password: str, hash: str) -> bool:
     return pwd_context.verify(password, hash)
 
 
-async def send_verification_email(email: EmailStr) -> None:
+async def send_verification_email(
+        email: EmailStr,
+        title: str,
+        text: str,
+        url_for_token: str,
+) -> None:
     """
     Отправляет письмо верификации на почту пользователя.
 
     Args:
         email: электронная почта пользователя.
+        title: заголовок письма.
+        text: текст письма.
+        url_for_token: маршрут, на который перейдет пользователь, 
+            нажав на ссылку.
     """
 
     token = create_access_token(email=email, for_email=True)
-    link = f"http://localhost:8000/auth/verify-email?token={token}"
+    link = f"http://localhost:8000{url_for_token}?token={token}"
 
-    msg = MIMEText(f"Подтвердите вашу почту: {link}")
-    msg["Subject"] = "Подтверждение почты"
+    msg = MIMEText(f"{text} {link}")
+    msg["Subject"] = title
     msg["From"] = EMAIL_DATA["platform_email"] 
     msg["To"] = email
 
