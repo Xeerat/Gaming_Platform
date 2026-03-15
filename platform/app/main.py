@@ -110,3 +110,41 @@ def load_page_constructor(request: Request):
             "request": request,
         },
     )
+
+
+@app.get("/auth/forgot_password/", response_class=HTMLResponse)
+def load_first_page_forgot_password(
+    request: Request,
+    success: Optional[str] = None,
+    error: Optional[str] = None,
+    token: Optional[str] = None,
+):
+    """Загружает первую страницу вкладки 'Забыли пароль?'"""
+
+    return templates.TemplateResponse(
+        'forgot_password1.html',
+        {
+            "request": request,
+            "success": success,
+            "error": error,
+            "token": token,
+        }
+    )
+
+
+@app.get("/auth/update_password/", response_class=HTMLResponse)
+def load_second_page_forgot_password(
+    request: Request, 
+    error: Optional[str] = None,
+    token: Optional[str] = None,
+):
+    """Загружает вторую страницу вкладки 'Забыли пароль?'"""
+
+    return templates.TemplateResponse(
+        "forgot_password2.html",
+        {
+            "request": request,
+            "error": error,
+            "token": token,
+        }
+    )
