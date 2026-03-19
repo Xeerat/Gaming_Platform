@@ -5,7 +5,6 @@ from fastapi.templating import Jinja2Templates
 
 from users.router import router as router_users
 
-
 from typing import Optional
 
 

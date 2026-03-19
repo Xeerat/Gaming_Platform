@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
 
-from dao.dao_models import UsersDAO, MapDAO
+from dao.dao_models import UsersDAO
 from users.validation import SUserRegister, SUserAuth, SUserForgotPassword
 from users.validation import SUserUpdatePassword
 from users.auth import get_password_hash, create_access_token, verify_password
