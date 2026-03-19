@@ -298,3 +298,4 @@ async def update_password_user(request: Request) -> RedirectResponse:
         message=message,
         error=True,
     )
+
