@@ -19,6 +19,7 @@ COPY app/ .
 COPY alemb/ ../alemb/
 COPY alembic.ini ..
 
+COPY .env .
 
 
 # Команда для запуска
