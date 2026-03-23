@@ -19,8 +19,5 @@ COPY app/ .
 COPY alemb/ ../alemb/
 COPY alembic.ini ..
 
-COPY .env .
-
-
 # Команда для запуска
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
