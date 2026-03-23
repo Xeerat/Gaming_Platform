@@ -216,7 +216,7 @@
 
         const saveBtn = document.createElement('button');
         saveBtn.id = 'saveMapBtn';
-        saveBtn.textContent = "Сохранить карту";
+        saveBtn.textContent = "Сохранить";
         saveBtn.addEventListener('click', saveMap);
         container.appendChild(saveBtn);
     }
@@ -286,7 +286,12 @@
             // document.getElementById('paletteContainer').appendChild(toolContainer);
             initPhaser(document.getElementById('phaserContainer'));
         } else if(section==='characters'){
-            container.innerHTML = "<h2>Персонажи</h2><p>Здесь будут персонажи.</p>";
+            container.innerHTML = `
+                <div id="paletteContainer"></div>
+                <div id="phaserContainer" style="height: 500px;"></div>
+            `;
+            createPalette(document.getElementById('paletteContainer'));
+            initPhaser(document.getElementById('phaserContainer'));
         } else if(section==='quests'){
             container.innerHTML = "<h2>Квесты</h2><p>Здесь будут квесты.</p>";
         } else if(section==='logic'){
