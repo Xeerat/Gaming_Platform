@@ -3,10 +3,10 @@ from sqlalchemy.sql import ClauseElement
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import EmailStr
 
-from migration.models import User
+from migration.models import User, Map
 from database import async_session_maker
 
-from typing import Generic, TypeVar, Type
+from typing import Generic, TypeVar, Type, List
 
 
 T = TypeVar("T")
@@ -201,4 +201,100 @@ class UsersDAO(BaseDAO[User]):
         await super()._update_data_where(
             cls.model.email == email, 
             password=password
+        )
+
+class MapDAO(BaseDAO[Map]):
+    """Класс взаимодействия с таблицей map"""
+
+    model = Map
+
+    @classmethod
+    async def add_map(
+        cls, 
+        email: EmailStr, 
+        mapname: str, 
+        data: List[List[int]],
+    ) -> None:
+        """
+        Добавляет карту в базу данных.
+
+        Args:
+            email: email пользователя.
+            mapname: название карты.
+            data: сама карта в виде матрицы.
+
+        Raises:
+            IntegrityError - если добавляются данные, которые уже есть в базе.
+            SQLAlchemyError - если возникла ошибка при добавлении.
+        """
+
+
+        user = await UsersDAO.find_user(email)
+        if not user :
+            return
+                
+        await super()._add_data(
+            user_id=user.id,
+            mapname=mapname,
+            data=data,
+        )
+
+    @classmethod
+    async def delete_map(
+        cls, 
+        email: EmailStr, 
+        mapname: str, 
+    ) -> None:
+        """
+        Удаляют карту из базы данных.
+
+        Args:
+            email: электронная почта пользователя.
+            mapname: название карты, которую нужно удалить
+    
+        Returns:
+            True - если получилось удалить карту, иначе False.
+            
+        Raises:
+            SQLAlchemyError - если при удалении возникла ошибка.
+        """
+
+        user = await UsersDAO.find_user(email)
+
+        if not user:
+            return 
+        
+        return await super()._delete_data_where(
+            cls.model.user_id == user.id,
+            cls.model.mapname == mapname
+        )
+    
+    @classmethod
+    async def update_map(
+        cls, 
+        email: EmailStr, 
+        mapname: str, 
+        new_data: List[List[int]],
+    ) -> None:
+        """
+        Добавляет карту в базу данных.
+
+        Args:
+            email: email пользователя.
+            mapname: название карты.
+            new_data: новая карта
+
+        Raises:
+            SQLAlchemyError - если возникла ошибка при добавлении.
+        """
+
+        user = await UsersDAO.find_user(email)
+
+        if not user:
+            return
+        
+        await super()._update_data_where(
+            cls.model.user_id == user.id,
+            cls.model.mapname == mapname,
+            data = new_data,
         )
