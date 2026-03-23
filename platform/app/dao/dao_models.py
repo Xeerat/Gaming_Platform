@@ -230,6 +230,8 @@ class MapDAO(BaseDAO[Map]):
 
 
         user = await UsersDAO.find_user(email)
+        if not user :
+            return
                 
         await super()._add_data(
             user_id=user.id,
@@ -237,7 +239,6 @@ class MapDAO(BaseDAO[Map]):
             data=data,
         )
 
-    
     @classmethod
     async def delete_map(
         cls, 
@@ -261,7 +262,7 @@ class MapDAO(BaseDAO[Map]):
         user = await UsersDAO.find_user(email)
 
         if not user:
-            return False
+            return 
         
         return await super()._delete_data_where(
             cls.model.user_id == user.id,
@@ -284,14 +285,13 @@ class MapDAO(BaseDAO[Map]):
             new_data: новая карта
 
         Raises:
-            IntegrityError - если добавляются данные, которые уже есть в базе.
             SQLAlchemyError - если возникла ошибка при добавлении.
         """
 
         user = await UsersDAO.find_user(email)
 
         if not user:
-            return False
+            return
         
         await super()._update_data_where(
             cls.model.user_id == user.id,
