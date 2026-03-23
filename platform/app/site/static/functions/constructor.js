@@ -62,27 +62,31 @@
     // Палитра тайлов
     // -------------------------------
     function createPalette(container){
-        container.innerHTML = '';
         const paletteDiv = document.createElement('div');
         paletteDiv.id = 'palette';
+
         tiles.forEach(tile=>{
             const div = document.createElement('div');
             div.classList.add('tile');
             div.style.background = tile.color;
+
             div.addEventListener('click',()=>{
                 selectedTile = tile.id;
                 document.querySelectorAll('.tile').forEach(t=>t.classList.remove('selected'));
                 div.classList.add('selected');
             });
+
             if(tile.id===selectedTile) div.classList.add('selected');
             paletteDiv.appendChild(div);
         });
+
         container.appendChild(paletteDiv);
 
         const saveBtn = document.createElement('button');
-        saveBtn.id = 'saveBtn';
+        saveBtn.id = 'saveMapBtn';
         saveBtn.textContent = "Сохранить карту";
         saveBtn.addEventListener('click', saveMap);
+
         container.appendChild(saveBtn);
     }
 
@@ -95,8 +99,8 @@
 
         const config = {
             type: Phaser.AUTO,
-            width: container.clientWidth,
-            height: container.clientHeight - 70, // место под палитру
+            width: container.clientWidth || 800,
+            height: 480, // фиксированная высота
             parent: container,
             backgroundColor: '#ffffff',
             scene:{
@@ -129,14 +133,29 @@
         document.getElementById('btn'+section.charAt(0).toUpperCase()+section.slice(1)).classList.add('active');
 
         if(section==='map'){
-            createPalette(container);
-            initPhaser(container);
+            container.innerHTML = `
+                <div id="paletteContainer"></div>
+                <div id="phaserContainer" style="height: 500px;"></div>
+            `;
+
+            createPalette(document.getElementById('paletteContainer'));
+            initPhaser(document.getElementById('phaserContainer'));
         } else if(section==='characters'){
             container.innerHTML = "<h2>Персонажи</h2><p>Здесь будут персонажи.</p>";
         } else if(section==='quests'){
             container.innerHTML = "<h2>Квесты</h2><p>Здесь будут квесты.</p>";
         } else if(section==='logic'){
             container.innerHTML = "<h2>Логика</h2><p>Редактор логики игры.</p>";
+        } else if(section==='dialog'){
+            container.innerHTML = "<h2>Диалог</h2><p>Редактор диалогов игры.</p>";
+        } else if(section==='scene'){
+            container.innerHTML = `
+                <div id="gameContainer"></div>
+                <div id="fileManager">
+                    <div id="trashZone" class="trash">🗑️</div>
+                    <button id="reloadBtn" class="reload">🔄</button>
+                </div>
+            `;
         }
     }
 
@@ -144,7 +163,8 @@
     document.getElementById('btnCharacters').addEventListener('click',()=>switchSection('characters'));
     document.getElementById('btnQuests').addEventListener('click',()=>switchSection('quests'));
     document.getElementById('btnLogic').addEventListener('click',()=>switchSection('logic'));
-
+    document.getElementById('btnScene').addEventListener('click', () => switchSection('scene'));
+    document.getElementById('btnDialog').addEventListener('click', () => switchSection('dialog'));
     // -------------------------------
     // Инициализация первой секции
     // -------------------------------
