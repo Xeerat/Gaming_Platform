@@ -2,7 +2,7 @@
     // ------------------------------------
     // Настройки тайлов и карты
     // ------------------------------------
-    const tileSize = 32;
+    const tileSize = 16;
     const tiles = [
         {id:0, color:'#ffffff'}, // фон
         {id:1, color:'#4caf50'}, // зелёный
@@ -73,9 +73,9 @@
     // -------------------------------
     function createMapSizeButtons(container) {
         const sizes = [
-            {name:'Маленькая', width:10, height:8},
-            {name:'Средняя', width:20, height:15},
-            {name:'Большая', width:40, height:30},
+            {name:'Маленькая', width:60, height:30},
+            {name:'Средняя', width:90, height:30},
+            {name:'Большая', width:115, height:30},
         ];
 
         const btnContainer = document.createElement('div');
@@ -228,10 +228,13 @@
         if(phaserGame) phaserGame.destroy(true);
         mapMatrix = createEmptyMap(mapWidth,mapHeight);
 
+        const width = mapWidth * tileSize;   
+        const height = mapHeight * tileSize; 
+
         const config = {
             type: Phaser.AUTO,
-            width: container.clientWidth || 800,
-            height: 480,
+            width: width,
+            height: height,
             parent: container,
             backgroundColor: '#ffffff',
             scene:{
