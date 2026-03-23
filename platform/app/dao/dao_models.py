@@ -3,8 +3,8 @@ from sqlalchemy.sql import ClauseElement
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import EmailStr
 
-from migration.models import User
-from database import async_session_maker
+from app.migration.models import User
+from app.database import async_session_maker
 
 from typing import Generic, TypeVar, Type
 

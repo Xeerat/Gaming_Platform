@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from users.router import router as router_users
+from app.users.router import router as router_users
 
 from typing import Optional
 
@@ -11,8 +11,8 @@ from typing import Optional
 app = FastAPI()
 app.include_router(router_users)
 
-app.mount('/static', StaticFiles(directory="site/static"), name="static")
-templates = Jinja2Templates(directory="site/templates")
+app.mount('/static', StaticFiles(directory="app/site/static"), name="static")
+templates = Jinja2Templates(directory="app/site/templates")
 
 
 @app.get("/auth/register/", response_class=HTMLResponse)
