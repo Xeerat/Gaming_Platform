@@ -33,6 +33,12 @@ class User(Base):
         lazy="selectin" 
     )
 
+    sprites: Mapped[list["Sprite"]] = relationship(
+        back_populates="owner", 
+        cascade="all, delete-orphan",
+        lazy="selectin" 
+    )
+
 
 
 class Map(Base):
@@ -50,5 +56,25 @@ class Map(Base):
     owner: Mapped["User"] = relationship(back_populates="maps")
     __table_args__ = (
         UniqueConstraint("user_id", "mapname", name="uq_user_map_name"),
+    )
+    extend_existing = True
+
+
+
+class Sprite(Base):
+    """ORM-модель таблицы sprites"""
+
+    __tablename__ = "sprites"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    sprite_name: Mapped[str] = mapped_column()
+    data: Mapped[List[List[int]]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=text("TIMEZONE('utc', now())")
+    )
+    owner: Mapped["User"] = relationship(back_populates="sprites")
+    __table_args__ = (
+        UniqueConstraint("user_id", "sprite_name", name="uq_user_sprite_name"),
     )
     extend_existing = True
