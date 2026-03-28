@@ -3,7 +3,7 @@ from sqlalchemy.sql import ClauseElement
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import EmailStr
 
-from migration.models import User, Map
+from migration.models import User, Map, Sprite
 from database import async_session_maker
 
 from typing import Generic, TypeVar, Type, List
@@ -236,7 +236,7 @@ class MapDAO(BaseDAO[Map]):
         await super()._add_data(
             user_id=user.id,
             mapname=mapname,
-            data=data,
+            data=data
         )
 
     @classmethod
@@ -277,7 +277,7 @@ class MapDAO(BaseDAO[Map]):
         new_data: List[List[int]],
     ) -> None:
         """
-        Добавляет карту в базу данных.
+        Обновляет карту в базе данных.
 
         Args:
             email: email пользователя.
@@ -296,5 +296,129 @@ class MapDAO(BaseDAO[Map]):
         await super()._update_data_where(
             cls.model.user_id == user.id,
             cls.model.mapname == mapname,
-            data = new_data,
+            data = new_data
+        )
+
+class SpriteDAO(BaseDAO[Sprite]):
+    """Класс взаимодействия с таблицей sprites"""
+
+    model = Sprite
+
+    @classmethod
+    async def add_sprite(
+        cls, 
+        email: EmailStr, 
+        sprite_name: str,
+        data: List[List[int]],
+    ) -> None:
+        """
+        Добавляет спрайт в базу данных.
+
+        Args:
+            email: email пользователя.
+            sprite_name: название спрайта.
+            data: сам спрайт в виде матрицы.
+
+        Raises:
+            IntegrityError - если добавляются данные, которые уже есть в базе.
+            SQLAlchemyError - если возникла ошибка при добавлении.
+        """
+
+
+        user = await UsersDAO.find_user(email)
+        if not user :
+            return
+                
+        await super()._add_data(
+            user_id=user.id,
+            sprite_name=sprite_name,
+            data=data
+        )
+
+    @classmethod
+    async def delete_sprite(
+        cls, 
+        email: EmailStr, 
+        sprite_name: str, 
+    ) -> None:
+        """
+        Удаляют спрайт из базы данных.
+
+        Args:
+            email: электронная почта пользователя.
+            sprite_name: название спрайта, которого нужно удалить
+    
+        Returns:
+            True - если получилось удалить спрайта, иначе False.
+            
+        Raises:
+            SQLAlchemyError - если при удалении возникла ошибка.
+        """
+
+        user = await UsersDAO.find_user(email)
+
+        if not user:
+            return 
+        
+        return await super()._delete_data_where(
+            cls.model.user_id == user.id,
+            cls.model.sprite_name == sprite_name
+        )
+    
+    @classmethod
+    async def update_sprite(
+        cls, 
+        email: EmailStr, 
+        sprite_name: str, 
+        new_data: List[List[int]],
+    ) -> None:
+        """
+        Обновляет спрайта в базе данных.
+
+        Args:
+            email: email пользователя.
+            sprite_name: название спрайта.
+            new_data: новый спрайт
+
+        Raises:
+            SQLAlchemyError - если возникла ошибка при добавлении.
+        """
+
+        user = await UsersDAO.find_user(email)
+
+        if not user:
+            return
+        
+        await super()._update_data_where(
+            cls.model.user_id == user.id,
+            cls.model.sprite_name == sprite_name,
+            data = new_data
+        )
+    
+    @classmethod
+    async def find_sprite(
+        cls,
+        email: EmailStr,
+        sprite_name: str,
+    ) -> Sprite | None:
+        """
+        Находит спрайта в базе данных.
+
+        Args: 
+            email: электронная почта пользователя.
+            sprite_name: название спрайта.
+
+        
+        Returns:
+            Объект спрайта или None, если спрайт не найден.
+        """
+
+        user = await UsersDAO.find_user(email)
+
+        if not user:
+            return
+
+        return await super()._find_data_where(
+            cls.model.email == email,
+            cls.model.sprite_name == sprite_name
         )
