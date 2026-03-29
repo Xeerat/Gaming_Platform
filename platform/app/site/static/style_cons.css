@@ -62,7 +62,7 @@ header button.active {
 main { 
     padding: 20px;
     height: calc(100vh - 60px);
-    overflow: auto;
+    overflow: hidden;
     padding-bottom: 80px;
 }
 
@@ -277,4 +277,185 @@ main {
     background: var(--btn-hover-gradient);
     box-shadow: 0 6px 20px rgba(118, 75, 162, 0.7);
     transform: translateY(-1px) scale(1.05);
+}
+
+#nodeList {
+    margin-top: 15px;
+    max-height: 70vh;
+    overflow-y: hidden;
+}
+
+#nodeList .card {
+    background: rgba(118, 75, 162, 0.3); /* фиолетово-синий градиентный оттенок */
+    padding: 10px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+#nodeList .card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    border: 2px solid #ff4fff;
+}
+main::-webkit-scrollbar,
+#nodeList::-webkit-scrollbar {
+    width: 0;  /* убираем ширину полосы прокрутки */
+    background: transparent;
+}
+
+main,
+#nodeList {
+    scrollbar-width: none; /* для Firefox */
+    -ms-overflow-style: none; /* для IE/Edge */
+}
+
+#editor {
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: hidden;
+
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 15px;
+    backdrop-filter: blur(8px);
+}
+
+#editor .card {
+    background: rgba(255, 255, 255, 0.22);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+
+#editor .card label {
+    font-weight: 500;
+    display: block;
+    margin-top: 10px;
+
+    color: rgba(0, 0, 0, 0.6); 
+    letter-spacing: 0.3px;
+
+    font-size: 13px;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+.new-replica {
+    display: block;
+    max-width: 100%;
+}
+
+#editor .card input,
+#editor .card select,
+#editor .card textarea {
+    width: 100%;
+    margin-top: 5px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.3);
+    color: #000;
+    font-size: 14px;
+}
+
+#editor .card textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+#gameContainer .new-replica {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+
+    background: rgba(118, 75, 162, 0.25);
+    border: 1px solid rgba(118, 75, 162, 0.5);
+    border-radius: 12px;
+}
+
+#editor .choice {
+    background: rgba(118, 75, 162, 0.15);
+    padding: 8px;
+    border-radius: 8px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+#editor .choice input {
+    flex: 1;
+    background: rgba(255,255,255,0.3);
+    color: #000; 
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+#editor .choice select {
+    width: 150px;
+    background: rgba(255,255,255,0.3);
+    color: #000;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+#editor .button:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    box-shadow: 0 0 20px rgba(118, 75, 162, 0.6);
+    transform: scale(1.03);
+}
+
+.button {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 8px 12px;
+
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.85);
+
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    backdrop-filter: blur(6px);
+}
+
+/* мягкий hover */
+.button:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+}
+
+/* нажатие */
+.button:active {
+    transform: scale(0.96);
+}
+
+#nodeList + .button,
+#nodeList .button {
+    width: 100%;
+}
+
+/* конкретно "Добавить реплику" */
+#gameContainer button.button:first-child {
+    background: rgba(118, 75, 162, 0.25);
+    border: 1px solid rgba(118, 75, 162, 0.5);
+}
+
+#gameContainer button.button:first-child:hover {
+    background: rgba(118, 75, 162, 0.4);
 }
