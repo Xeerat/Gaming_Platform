@@ -39,6 +39,118 @@
     let mapMatrix = [];
     let graphics;
     let phaserGame;
+    let nodes = [];
+    let selectedNodeId = null;
+
+    function addNode() {
+        const id = Date.now().toString();
+        nodes.push({
+            id,
+            speaker: "NPC",
+            name: "Персонаж",
+            text: "",
+            choices: []
+        });
+        selectNode(id);
+        render();
+    }
+
+    function selectNode(id) {
+        selectedNodeId = id;
+        render();
+    }
+
+    function addChoice(node) {
+        node.choices.push({
+            text: "",
+            next: null
+        });
+        render();
+    }
+
+    function render() {
+        renderList();
+        renderEditor();
+    }
+
+    function renderList() {
+        const list = document.getElementById("nodeList");
+        list.innerHTML = "";
+
+        nodes.forEach(n => {
+            const div = document.createElement("div");
+            div.className = "card";
+            div.innerText = (n.text || "Новая реплика").slice(0, 30);
+            div.onclick = () => selectNode(n.id);
+            list.appendChild(div);
+        });
+    }
+
+    function renderEditor() {
+        const editor = document.getElementById("editor");
+        editor.innerHTML = "";
+
+        const node = nodes.find(n => n.id === selectedNodeId);
+        if (!node) return;
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+            <label>Кто говорит:</label>
+            <select onchange="updateField('speaker', this.value)">
+                <option ${node.speaker==='NPC'?'selected':''}>NPC</option>
+                <option ${node.speaker==='Player'?'selected':''}>Player</option>
+            </select>
+
+            <label>Имя:</label>
+            <input value="${node.name}" onchange="updateField('name', this.value)"/>
+
+            <label>Текст:</label>
+            <textarea onchange="updateField('text', this.value)">${node.text}</textarea>
+
+            <button class="button" onclick="addChoiceToCurrent()">Добавить вариант</button>
+        `;
+
+        node.choices.forEach((c, i) => {
+            const div = document.createElement("div");
+            div.className = "choice";
+
+            div.innerHTML = `
+                <input placeholder="Ответ игрока" value="${c.text}" 
+                    onchange="updateChoice(${i}, 'text', this.value)" />
+
+                <select onchange="updateChoice(${i}, 'next', this.value)">
+                    <option value="">-- конец --</option>
+                    ${nodes.map(n => `
+                        <option value="${n.id}" ${c.next===n.id?'selected':''}>
+                            ${n.text.slice(0,20) || "реплика"}
+                        </option>
+                    `).join("")}
+                </select>
+            `;
+
+            card.appendChild(div);
+        });
+
+        editor.appendChild(card);
+    }
+
+    function updateField(field, value) {
+        const node = nodes.find(n => n.id === selectedNodeId);
+        node[field] = value;
+        render();
+    }
+
+    function addChoiceToCurrent() {
+        const node = nodes.find(n => n.id === selectedNodeId);
+        addChoice(node);
+    }
+
+    function updateChoice(index, field, value) {
+        const node = nodes.find(n => n.id === selectedNodeId);
+        node.choices[index][field] = value || null;
+    }
 
     // -------------------------------
     // Функция изменения яркости
@@ -300,7 +412,22 @@
         } else if(section==='logic'){
             container.innerHTML = "<h2>Логика</h2><p>Редактор логики игры.</p>";
         } else if(section==='dialog'){
-            container.innerHTML = "<h2>Диалог</h2><p>Редактор диалогов игры.</p>";
+            container.innerHTML = `
+                <div style="display:flex; height:100%;">
+                    
+                    <div style="width:250px; padding:10px; background:rgba(0,0,0,0.2);">
+                        <button class="button new-replica" onclick="addNode()">Добавить реплику</button>
+                        <div id="nodeList"></div>
+                    </div>
+
+                    <div style="flex:1; padding:10px;">
+                        <h2>Редактор диалога</h2>
+                        <div id="editor"></div>
+                    </div>
+
+                </div>
+            `;
+            render();
         } else if(section==='scene'){
             container.innerHTML = `
                 <div id="gameContainer"></div>
@@ -323,4 +450,9 @@
     // Инициализация первой секции
     // -------------------------------
     switchSection('map');
+
+    window.addNode = addNode;
+    window.addChoiceToCurrent = addChoiceToCurrent;
+    window.updateField = updateField;
+    window.updateChoice = updateChoice;
 })();
