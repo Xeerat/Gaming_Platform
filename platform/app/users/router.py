@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Form, Request, Depends
+from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
 
-from dao.dao_models import UsersDAO
-from users.validation import SUserRegister, SUserAuth, SUserForgotPassword
-from users.validation import SUserUpdatePassword
-from users.auth import get_password_hash, create_access_token, verify_password
-from users.auth import decode_access_token, send_verification_email
+from app.dao.dao_models import UsersDAO
+from app.users.validation import SUserRegister, SUserAuth, SUserForgotPassword
+from app.users.validation import SUserUpdatePassword
+from app.users.auth import decode_access_token, send_verification_email
+from app.users.auth import get_password_hash, create_access_token
+from app.users.auth import verify_password
+
 
 from urllib.parse import quote
 

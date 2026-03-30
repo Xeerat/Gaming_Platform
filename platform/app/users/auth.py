@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 from datetime import datetime, timedelta, timezone
 from aiosmtplib import SMTP
 
-from database import TOKEN_DATA, EMAIL_DATA
+from app.database import TOKEN_DATA, EMAIL_DATA
 
 
 def create_access_token(email: EmailStr, for_email: bool = False) -> str:
