@@ -1,6 +1,8 @@
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs
-from sqlalchemy import text
+from sqlalchemy import text, ForeignKey, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
+from typing import List
 
 from datetime import datetime
 
@@ -17,10 +19,62 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
-    email: Mapped[str] = mapped_column(unique=True)
+    username: Mapped[str] = mapped_column(unique=True, index=True)
+    email: Mapped[str] = mapped_column(unique=True, index=True)
     password: Mapped[str] = mapped_column()
     register_at: Mapped[datetime] = mapped_column(
         server_default=text("TIMEZONE('utc', now())")
+    )
+    extend_existing = True
+
+    maps: Mapped[list["Map"]] = relationship(
+        back_populates="owner", 
+        cascade="all, delete-orphan",
+        lazy="selectin" 
+    )
+
+    sprites: Mapped[list["Sprite"]] = relationship(
+        back_populates="owner", 
+        cascade="all, delete-orphan",
+        lazy="selectin" 
+    )
+
+
+
+class Map(Base):
+    """ORM-модель таблицы maps"""
+
+    __tablename__ = "maps"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    mapname: Mapped[str] = mapped_column()
+    data: Mapped[List[List[int]]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=text("TIMEZONE('utc', now())")
+    )
+    owner: Mapped["User"] = relationship(back_populates="maps")
+    __table_args__ = (
+        UniqueConstraint("user_id", "mapname", name="uq_user_map_name"),
+    )
+    extend_existing = True
+
+
+
+class Sprite(Base):
+    """ORM-модель таблицы sprites"""
+
+    __tablename__ = "sprites"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    sprite_name: Mapped[str] = mapped_column()
+    data: Mapped[List[List[int]]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=text("TIMEZONE('utc', now())")
+    )
+    owner: Mapped["User"] = relationship(back_populates="sprites")
+    __table_args__ = (
+        UniqueConstraint("user_id", "sprite_name", name="uq_user_sprite_name"),
     )
     extend_existing = True
