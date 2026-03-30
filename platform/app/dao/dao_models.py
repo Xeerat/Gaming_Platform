@@ -49,6 +49,7 @@ class BaseDAO(Generic[T]):
         Raises:
             IntegrityError - если добавляются данные, которые уже есть в базе.
             SQLAlchemyError - если возникла ошибка при добавлении.
+            TypeError - если были переданы некорректные значения.
         """
 
         async with async_session_maker() as session:
@@ -56,10 +57,7 @@ class BaseDAO(Generic[T]):
             try:
                 await session.execute(query)
                 await session.commit()
-            except IntegrityError as error:
-                await session.rollback()
-                raise error
-            except SQLAlchemyError as error:
+            except (TypeError, IntegrityError, SQLAlchemyError) as error:
                 await session.rollback()
                 raise error
 
@@ -79,6 +77,9 @@ class BaseDAO(Generic[T]):
                     Ключи должны соответствовать атрибутам ORM-модели.
                     Допустимый набор полей определяется конкретным DAO.
 
+        Returns:
+            True - если была обновлена хотя бы одна строка. False - иначе.
+
         Raises:
             SQLAlchemyError - если возникла ошибка при обновлении.
         """
@@ -86,11 +87,13 @@ class BaseDAO(Generic[T]):
         async with async_session_maker() as session:
             query = update(cls.model).where(*conditions).values(**values)
             try:
-                await session.execute(query)
+                result = await session.execute(query)
                 await session.commit()
             except SQLAlchemyError as error:
                 await session.rollback()
                 raise error
+
+            return result.rowcount > 0
 
     @classmethod
     async def _delete_data_where(cls, *conditions: ClauseElement) -> bool:
@@ -194,11 +197,14 @@ class UsersDAO(BaseDAO[User]):
             email: электронная почта пользователя.
             password: новый пароль.
 
+        Returns:
+            True - если была обновлена хотя бы одна строка. False - иначе.
+            
         Raises:
             SQLAlchemyError - если возникла ошибка при обновлении.
         """
 
-        await super()._update_data_where(
+        return await super()._update_data_where(
             cls.model.email == email, 
             password=password
         )
