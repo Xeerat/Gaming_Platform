@@ -25,8 +25,9 @@ def load_page_register(request: Request, error: Optional[str] = None):
     """
 
     return templates.TemplateResponse(
-        'register.html', 
-        {
+        request=request,
+        name='register.html', 
+        context={
             "request": request,
             "error": error,
         },
@@ -48,8 +49,9 @@ def load_page_login(
     """
 
     return templates.TemplateResponse(
-        'login.html', 
-        {
+        request=request, 
+        name='login.html', 
+        context={
             "request": request,
             "success": success,
             "error": error,
@@ -62,8 +64,9 @@ def load_page_terms(request: Request):
     """Загружает страницу с условиями использования."""
 
     return templates.TemplateResponse(
-        'terms_use.html', 
-        {
+        request=request,
+        name='terms_use.html', 
+        context={
             "request": request,
         },
     )
@@ -74,8 +77,9 @@ def load_page_verify_email(request: Request, token: str = None):
     """Загружает страницу подтверждения email."""
 
     return templates.TemplateResponse(
-        'verify_email.html', 
-        {
+        request=request,
+        name='verify_email.html', 
+        context={
             "request": request, 
             "token": token,
         },
@@ -92,8 +96,9 @@ def load_page_main(request: Request, success: Optional[str] = None):
     """
 
     return templates.TemplateResponse(
-        'main_page.html', 
-        {
+        request=request,
+        name='main_page.html', 
+        context={
             "request": request,
             "success": success,
         },
@@ -105,8 +110,9 @@ def load_page_constructor(request: Request):
     """Загружает страницу конструктора."""
     
     return templates.TemplateResponse(
-        'constructor.html', 
-        {
+        request=request,
+        name='constructor.html', 
+        context={
             "request": request,
         },
     )
@@ -122,8 +128,9 @@ def load_first_page_forgot_password(
     """Загружает первую страницу вкладки 'Забыли пароль?'"""
 
     return templates.TemplateResponse(
-        'forgot_password1.html',
-        {
+        request=request,
+        name='forgot_password1.html',
+        context={
             "request": request,
             "success": success,
             "error": error,
@@ -141,8 +148,9 @@ def load_second_page_forgot_password(
     """Загружает вторую страницу вкладки 'Забыли пароль?'"""
 
     return templates.TemplateResponse(
-        "forgot_password2.html",
-        {
+        request=request,
+        name="forgot_password2.html",
+        context={
             "request": request,
             "error": error,
             "token": token,

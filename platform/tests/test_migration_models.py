@@ -94,8 +94,9 @@ def test_session():
     try:
         yield session
     finally:
+        if transaction.is_active:
+            transaction.rollback()
         session.close()
-        transaction.rollback()
         connection.close()
 
 
