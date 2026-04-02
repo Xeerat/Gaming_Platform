@@ -126,9 +126,13 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
         return;
     }
 
-    const payload = { character_name: name, matrix };
-
+    // const payload = { character_name: name, matrix }
+    const payload = {
+        sprite_name: name,
+        data: getCharacter()
+    };
     try {
+
         const response = await fetch("http://localhost:8000/characters/add_character/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
