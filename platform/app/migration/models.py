@@ -2,7 +2,7 @@ from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy import text, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
-from typing import List
+from typing import List, Dict, Any
 
 from datetime import datetime
 
@@ -49,7 +49,7 @@ class Map(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     mapname: Mapped[str] = mapped_column()
-    data: Mapped[List[List[int]]] = mapped_column(JSONB)
+    data: Mapped[List[List[Dict[str, Any]]]] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         server_default=text("TIMEZONE('utc', now())")
     )
@@ -69,7 +69,7 @@ class Sprite(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     sprite_name: Mapped[str] = mapped_column()
-    data: Mapped[List[List[int]]] = mapped_column(JSONB)
+    data: Mapped[List[List[Dict[str, Any]]]] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         server_default=text("TIMEZONE('utc', now())")
     )

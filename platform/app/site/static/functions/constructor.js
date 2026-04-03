@@ -257,8 +257,31 @@
         const matrix = getMap();
         const mapName = prompt("Введите название карты:");
         if(!mapName){ alert("Название обязательно!"); return; }
-        console.log("Сохраняем карту:", mapName, matrix);
-        alert("Карта сохранена! (пример, без backend)");
+
+        const payload = {
+            map_name: mapName,
+            data: matrix
+        };
+
+        try {
+            const response = await fetch("http://0.0.0.0:8000/maps/add_map/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload)
+            });
+
+            if(!response.ok){
+                const data = await response.json();
+                alert("Ошибка: " + (data.detail || "неизвестная"));
+                return;
+            }
+
+            alert("Карта сохранена!");
+        } catch(e){
+            console.error(e);
+            alert("Ошибка сети");
+        }
     }
 
     // -------------------------------

@@ -4,12 +4,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.users.router import router as router_users
+from app.constructor.sprites_constructor_router import router as sprite_router
+from app.constructor.maps_constructor_router import router as maps_router
 
 from typing import Optional
 
 
 app = FastAPI()
+
 app.include_router(router_users)
+app.include_router(sprite_router)
+app.include_router(maps_router)
 
 app.mount('/static', StaticFiles(directory="app/site/static"), name="static")
 templates = Jinja2Templates(directory="app/site/templates")
