@@ -41,6 +41,7 @@
     let phaserGame;
     let nodes = [];
     let selectedNodeId = null;
+    const fileDataStore = new Map();
 
     function addNode() {
         const id = Date.now().toString();
@@ -264,7 +265,7 @@
         };
 
         try {
-            const response = await fetch("http://0.0.0.0:8000/maps/add_map/", {
+            const response = await fetch("/maps/add_map/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -452,11 +453,11 @@
             `;
             render();
         } else if(section==='scene'){
+            // Просто очищаем контейнер, файловый менеджер уже есть в HTML
             container.innerHTML = `
-                <div id="gameContainer"></div>
-                <div id="fileManager">
-                    <div id="trashZone" class="trash">🗑️</div>
-                    <button id="reloadBtn" class="reload">🔄</button>
+                <div id="sceneContent" style="padding: 10px; min-height: 200px;">
+                    <!-- Сюда потом добавишь превью сцены -->
+                    <p style="color: #888;">Режим сцены (заглушка)</p>
                 </div>
             `;
         }
@@ -474,8 +475,107 @@
     // -------------------------------
     switchSection('map');
 
+
+    // -------------------------------
+    // Наведите красоты!!!!
+    // Пожалуйста?
+
+
+    async function handleReload() {
+        const fileManager = document.getElementById('fileManager');
+        if (!fileManager) return;
+
+        try {
+            const mapsRes = await fetch('/maps/get_all_maps/', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'include'
+            });
+
+            if (mapsRes.redirected || mapsRes.status === 0 || !mapsRes.ok) {
+                window.location.href = '/auth/login/';
+                return;
+            }
+
+            const maps = await mapsRes.json();
+
+            const spritesRes = await fetch('/sprites/get_all_sprites/', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'include'
+            });
+
+            if (spritesRes.redirected || spritesRes.status === 0 || !spritesRes.ok) {
+                window.location.href = '/auth/login/';
+                return;
+            }
+
+            const sprites = await spritesRes.json();
+
+            const allFiles = [
+                ...maps.map(m => ({ ...m, fileType: 'map' })),
+                ...sprites.map(s => ({ ...s, fileType: 'sprite' }))
+            ];
+
+            renderFileList(fileManager, allFiles);
+
+        } catch (error) {
+            window.location.href = '/auth/login/';
+        }
+    }
+
+    document.getElementById('reloadBtn').addEventListener('click', handleReload);
+
+    // -------------------------------
+
     window.addNode = addNode;
     window.addChoiceToCurrent = addChoiceToCurrent;
     window.updateField = updateField;
     window.updateChoice = updateChoice;
+
+    function renderFileList(container, files) {
+        let filesContainer = container.querySelector('.files-container');
+        if (!filesContainer) {
+            filesContainer = document.createElement('div');
+            filesContainer.className = 'files-container';
+            
+            const reloadBtn = container.querySelector('.reload');
+            if (reloadBtn) {
+                container.insertBefore(filesContainer, reloadBtn);
+            } else {
+                container.appendChild(filesContainer);
+            }
+        }
+        
+        filesContainer.innerHTML = '';
+
+        files.forEach(file => {
+            const fileCard = document.createElement('div');
+            fileCard.className = 'file-card';
+            
+            const uniqueId = `file-${file.fileType}-${file.id}`;
+            fileCard.id = uniqueId;
+            fileCard.dataset.fileId = file.id;
+            fileCard.dataset.fileType = file.fileType;
+            
+            const fileName = file.map_name || file.name || file.sprite_name || 'Без названия';
+            fileCard.dataset.fileName = fileName;
+
+            fileDataStore.set(uniqueId, file);
+
+            // 🔥 Разные иконки для карт и спрайтов
+            const icon = file.fileType === 'map' ? '🗺️' : '🎨';
+            
+            fileCard.innerHTML = `
+                <div class="file-icon">${icon}</div>
+                <div class="file-name" title="${fileName}">${fileName}</div>
+            `;
+
+            fileCard.addEventListener('click', () => {
+                console.log(`Клик по ${file.fileType}:`, fileDataStore.get(uniqueId));
+            });
+
+            filesContainer.appendChild(fileCard);
+        });
+    }
 })();

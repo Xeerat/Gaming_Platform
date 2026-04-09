@@ -34,6 +34,24 @@ class BaseDAO(Generic[T]):
             result = await session.execute(query)
 
             return result.scalars().first()
+        
+    @classmethod
+    async def _find_all_data_where(cls, *conditions: ClauseElement) -> list[T] | None:
+        """
+        Находит все данные в базе данных подходящие запросу.
+
+        Args:
+            conditions: условия для поиска данных.
+        
+        Returns:
+            Список объектов данных или None, если объекты не найдены.
+        """
+
+        async with async_session_maker() as session:
+            query = select(cls.model).where(*conditions)
+            result = await session.execute(query)
+
+            return result.scalars().all()
 
     @classmethod
     async def _add_data(cls, **values) -> None:
@@ -305,6 +323,33 @@ class MapDAO(BaseDAO[Map]):
             data = new_data
         )
 
+    @classmethod
+    async def find_all_maps(
+        cls,
+        email: EmailStr
+    ) -> list[Sprite]:
+        """
+        Находит всех спрайтов пользователя в базе данных.
+
+        Args: 
+            email: электронная почта пользователя.
+        
+        Returns:
+            Список бъектов спрайта или None, если спрайт не найден.
+
+        Raises: 
+            LookupError: ошибка что пользователь не найден
+        """
+
+        user = await UsersDAO.find_user(email)
+
+        if not user:
+            raise LookupError()
+
+        return await super()._find_all_data_where(
+            cls.model.user_id == user.id
+        )
+
 class SpriteDAO(BaseDAO[Sprite]):
     """Класс взаимодействия с таблицей sprites"""
 
@@ -427,4 +472,31 @@ class SpriteDAO(BaseDAO[Sprite]):
         return await super()._find_data_where(
             cls.model.email == email,
             cls.model.sprite_name == sprite_name
+        )
+    
+    @classmethod
+    async def find_all_sprites(
+        cls,
+        email: EmailStr
+    ) -> list[Sprite]:
+        """
+        Находит всех спрайтов пользователя в базе данных.
+
+        Args: 
+            email: электронная почта пользователя.
+        
+        Returns:
+            Список бъектов спрайта или None, если спрайт не найден.
+
+        Raises:
+            LookupError: ошибка что пользователь не найден
+        """
+
+        user = await UsersDAO.find_user(email)
+
+        if not user:
+            raise LookupError()
+
+        return await super()._find_all_data_where(
+            cls.model.user_id == user.id
         )
