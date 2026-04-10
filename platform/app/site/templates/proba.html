@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>VN Constructor</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+    --header-gradient: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    --btn-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --btn-hover-gradient: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    --btn-glow: 0 0 20px rgba(118, 75, 162, 0.6);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --text-color: #ffffff;
+    --panel-bg: #222;
+    --right-panel-bg: #111;
+    --accent-color: #ff4fff;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    height: 100vh;
+}
+
+/* ====== ЛЕВАЯ ПАНЕЛЬ ====== */
+#assets {
+    width: 200px;
+    background: var(--panel-bg);
+    color: var(--text-color);
+    padding: 15px;
+    border-right: 1px solid var(--glass-border);
+    backdrop-filter: blur(5px);
+    overflow-y: auto;
+}
+
+#assets h3 {
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+}
+
+#assets input,
+#assets button {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#assets button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+/* ====== ЛЕВАЯ ПАНЕЛЬ ====== */
+#assets {
+    width: 200px;
+    background: var(--panel-bg);
+    color: var(--text-color);
+    padding: 15px;
+    border-right: 1px solid var(--glass-border);
+    backdrop-filter: blur(5px);
+    overflow-y: auto;
+}
+
+#assets h3 {
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+}
+
+#assets input {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+#assets button {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--btn-gradient);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+}
+
+#assets button:hover {
+    background: var(--btn-hover-gradient);
+    transform: translateY(-2px);
+    box-shadow: var(--btn-glow);
+}
+
+#assets button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(118, 75, 162, 0.4);
+}
+
+/* ====== СЦЕНА ====== */
+#scene {
+    flex: 1;
+    position: relative;
+    background: linear-gradient(135deg, #2a1a4a, #3a2a6a);
+    overflow: hidden;
+    border-radius: 12px;
+    margin: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.sprite {
+    position: absolute;
+    width: 100px;
+    cursor: grab;
+    user-select: none;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+}
+
+.sprite:hover {
+    transform: scale(1.05);
+}
+
+/* ====== ПРАВАЯ ПАНЕЛЬ ====== */
+#panel {
+    width: 300px;
+    background: var(--right-panel-bg);
+    color: var(--text-color);
+    padding: 15px;
+    border-left: 1px solid var(--glass-border);
+    backdrop-filter: blur(5px);
+    overflow-y: auto;
+}
+
+#panel h3 {
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+}
+
+#panel input {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+#panel button {
+    width: 100%;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 8px;
+    background: var(--btn-gradient);
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+}
+
+#panel button:hover {
+    background: var(--btn-hover-gradient);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--btn-glow);
+}
+
+#panel button:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+/* ====== ДИАЛОГОВОЕ ОКНО ====== */
+#dialogBox {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 150px;
+    background: rgba(0, 0, 0, 0.85);
+    color: var(--text-color);
+    padding: 20px;
+    box-sizing: border-box;
+    font-size: 18px;
+    display: none;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--glass-border);
+}
+
+#name {
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+#dialogBox button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: var(--btn-gradient);
+    border: none;
+    border-radius: 8px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#dialogBox button:hover {
+    background: var(--btn-hover-gradient);
+}
+
+/* ====== ВИЗУАЛЬНАЯ ЛОГИКА ====== */
+#logic {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000000dd;
+    display: none;
+    z-index: 999;
+}
+
+#logicCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+.block {
+    position: absolute;
+    padding: 15px;
+    background: rgba(68, 68, 68, 0.9);
+    color: var(--text-color);
+    border-radius: 12px;
+    cursor: grab;
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+}
+
+.block:hover {
+    transform: scale(1.03);
+}
+
+
+.port {
+    width: 12px;
+    height: 12px;
+    background: var(--accent-color);
+    position: absolute;
+    border-radius: 50%;
+    cursor: crosshair;
+    box-shadow: 0 0 8px 2px rgba(255, 79, 255, 0.6);
+}
+.port.out { right: -5px; top: 50%; }
+.port.in { left: -5px; top: 50%; }
+
+.connection {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.connection.hovered {
+    stroke: var(--accent-color);
+    stroke-width: 4px;
+}
+
+#closeLogicBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: var(--btn-gradient);
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+    z-index: 10;
+}
+
+#closeLogicBtn:hover {
+    background: var(--btn-hover-gradient);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--btn-glow);
+}
+
+#closeLogicBtn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+#dialogBox {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 150px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 20px;
+    box-sizing: border-box;
+    font-size: 18px;
+    display: none;
+    z-index: 1000; 
+}
+
+.dialogOption {
+    margin: 5px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(102, 126, 234, 0.8);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.dialogOption:hover {
+    background: rgba(118, 75, 162, 0.9);
+    transform: scale(1.05);
+}
+
+.dialogOption:active {
+    transform: scale(0.98);
+}
+
+#name {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Для экранов меньше 1000px */
+@media (max-width: 1000px) {
+    #assets {
+        width: 150px; /* уменьшаем левую панель */
+        font-size: 14px; 
+    }
+    #panel {
+        width: 200px; /* уменьшаем правую панель */
+        font-size: 14px; 
+    }
+}
+
+/* Для экранов меньше 700px */
+@media (max-width: 700px) {
+    #assets, #panel {
+        width: 50px; /* почти скрываем */
+        overflow: hidden;
+    }
+    #assets h3, #panel h3, #assets input, #panel input, #assets button, #panel button {
+        display: none; /* скрываем контент панелей */
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ЛЕВАЯ ПАНЕЛЬ -->
+<div id="assets">
+    <h3>Спрайты Фон Музыка</h3>
+
+    <input type="file" id="spriteLoader" accept="image/*">
+    <button onclick="addSprite()">Добавить спрайт</button>
+
+    <hr>
+
+    <input type="file" id="bgLoader" accept="image/*">
+    <button onclick="setBackground()">Добавить фон</button>
+
+    <hr>
+    <h3>Музыка</h3>
+    <input type="file" id="audioLoader" accept="audio/*">
+    <button onclick="addAudio()">Добавить аудио</button>
+</div>
+
+<!-- СЦЕНА -->
+<div id="scene"></div>
+
+<div id="dialogBox">
+    <div id="name"></div>
+    <div id="text"></div>
+</div>
+
+<!-- ПРАВАЯ ПАНЕЛЬ -->
+<div id="panel">
+    <h3>Параметры</h3>
+    <div>X <input id="x"></div>
+    <div>Y <input id="y"></div>
+    <div>Scale <input id="scale" type="range" min="0.1" max="2" step="0.1"></div>
+    <button onclick="deleteSprite()">Удалить спрайт</button>
+    <button onclick="openLogic()">Логика</button>
+    <hr>
+    <h3>Диалог</h3>
+    <div>Имя <input id="charName"></div>
+    <div>Текст <input id="dialogText"></div>
+    <button onclick="addReplicaBlock()">+ Добавить реплику</button>
+    <br>
+    <button onclick="playDialog()">▶ Играть</button>
+    <button onclick="stopAudio()">■ Остановить музыку</button>
+</div>
+
+<!-- ЛОГИКА -->
+<div id="logic">
+    <canvas id="logicCanvas"></canvas>
+    <button id="closeLogicBtn" style="position:absolute;top:10px;right:10px;z-index:10;padding:5px 10px;">Выйти</button>
+</div>
+
+<script>
+
+let currentAudio = null; // единственный объект аудио
+
+function stopAudio() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+}
+
+function playAudio(src) {
+    if (!src) return;
+
+    // если текущий объект не создан, создаём
+    if (!currentAudio) {
+        currentAudio = new Audio(src);
+        currentAudio.loop = true;
+        currentAudio.play().catch(e => console.log("Ошибка воспроизведения:", e));
+    } else if (currentAudio.src !== src) {
+        // если другой файл, меняем src
+        currentAudio.pause();
+        currentAudio.src = src;
+        currentAudio.currentTime = 0;
+        currentAudio.play().catch(e => console.log("Ошибка воспроизведения:", e));
+    } else if (currentAudio.paused) {
+        // если тот же файл, но на паузе
+        currentAudio.play().catch(e => console.log("Ошибка воспроизведения:", e));
+    }
+}
+
+let audioFile = null;
+
+audioLoader.onchange = e => {
+    if(e.target.files[0]) {
+        audioFile = URL.createObjectURL(e.target.files[0]);
+    }
+};
+
+const scene = document.getElementById("scene");
+let selectedSprite = null;
+let sprites = [];
+
+// -------------------
+// ПРОВЕРКА НА ВВОД
+// -------------------
+x.addEventListener("input", () => {
+    x.value = x.value.replace(/[^0-9.-]/g,''); // оставляем только цифры, точку и минус
+    updateSprite();
+});
+y.addEventListener("input", () => {
+    y.value = y.value.replace(/[^0-9.-]/g,'');
+    updateSprite();
+});
+
+// -------------------
+// СПРАЙТЫ
+// -------------------
+function createSprite(src, x, y) {
+    const img = document.createElement("img");
+    img.src = src;
+    img.className = "sprite";
+
+    const sprite = { el: img, x, y, scale: 1 };
+    img.style.left = x + "px";
+    img.style.top = y + "px";
+
+    img.onclick = () => selectSprite(sprite);
+    scene.appendChild(img);
+    sprites.push(sprite);
+}
+
+function selectSprite(sprite) {
+    selectedSprite = sprite;
+    x.value = sprite.x;
+    y.value = sprite.y;
+    scale.value = sprite.scale;
+}
+
+function updateSprite() {
+    if (!selectedSprite) return;
+    selectedSprite.x = +x.value;
+    selectedSprite.y = +y.value;
+    selectedSprite.scale = +scale.value;
+    selectedSprite.el.style.left = selectedSprite.x + "px";
+    selectedSprite.el.style.top = selectedSprite.y + "px";
+    selectedSprite.el.style.transform = `scale(${selectedSprite.scale})`;
+}
+
+x.oninput = updateSprite;
+y.oninput = updateSprite;
+scale.oninput = updateSprite;
+let selectedConnection = null;
+
+scene.addEventListener("mousedown", e => {
+    if (!e.target.classList.contains("sprite")) return;
+    const sprite = sprites.find(s => s.el === e.target);
+
+    const sceneRect = scene.getBoundingClientRect(); // координаты сцены
+    const offsetX = (e.clientX - sprite.el.getBoundingClientRect().left) / sprite.scale;
+    const offsetY = (e.clientY - sprite.el.getBoundingClientRect().top) / sprite.scale;
+
+    function move(ev) {
+        sprite.x = (ev.clientX - sceneRect.left) - offsetX;
+        sprite.y = (ev.clientY - sceneRect.top) - offsetY;
+        sprite.el.style.left = sprite.x + "px";
+        sprite.el.style.top = sprite.y + "px";
+    }
+
+    function up() {
+        window.removeEventListener("mousemove", move);
+        window.removeEventListener("mouseup", up);
+    }
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+});
+
+let spriteImage = null;
+spriteLoader.onchange = e => { if(e.target.files[0]) spriteImage = URL.createObjectURL(e.target.files[0]); };
+function addSprite() { if(!spriteImage) return; createSprite(spriteImage,100,100); }
+
+let bgImage = null;
+bgLoader.onchange = e => { if(e.target.files[0]) bgImage = URL.createObjectURL(e.target.files[0]); };
+function setBackground() {
+    if (!bgImage) return;
+    scene.style.background = `url(${bgImage}) no-repeat center center`;
+    scene.style.backgroundSize = "100% 100%"; // всегда растягиваем на весь экран
+}
+
+// -------------------
+// ЛОГИКА
+// -------------------
+const logic = document.getElementById("logic");
+const canvas = document.getElementById("logicCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+let blocks = [];
+let connections = [];
+let draggingLine = null;
+
+function openLogic() { logic.style.display = "block"; }
+
+// -------------------
+// ДИАЛОГОВЫЕ БЛОКИ С ВИЗУАЛЬНОЙ ЛОГИКОЙ
+// -------------------
+function generateId() { return 'id'+Math.random().toString(36).substr(2,9); }
+
+let userDialog = [];
+
+function addReplicaBlock() {
+    const name = document.getElementById("charName").value || "Описание";
+    const text = document.getElementById("dialogText").value;
+    if(!text) return;
+    const id = generateId();
+    const sceneState = captureSceneState();
+
+    // создаём визуальный блок
+    const div = document.createElement("div");
+    div.className="block";
+    div.innerText = name+"\n"+text;
+    div.style.left="100px"; 
+    div.style.top="100px";
+
+    // кнопка удаления
+    const deleteBtn = document.createElement("button");
+    deleteBtn.innerText = "X";
+    deleteBtn.style.position = "absolute";
+    deleteBtn.style.top = "0";
+    deleteBtn.style.right = "0";
+    div.appendChild(deleteBtn);
+
+    const block = {
+        id,
+        name,
+        text,
+        bg: sceneState.bg,
+        sprites: sceneState.sprites,
+        audio: audioFile || null,
+        options: []
+    };
+    userDialog.push(block);
+
+    document.getElementById("charName").value="";
+    document.getElementById("dialogText").value="";
+
+    const input = document.createElement("div"); input.className="port in"; div.appendChild(input);
+    const output = document.createElement("div"); output.className="port out"; div.appendChild(output);
+    logic.appendChild(div);
+
+    const obj = { el: div, input, output, x:100, y:100, blockId:id };
+    blocks.push(obj);
+
+    // обработчик удаления
+    deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        div.remove();
+        blocks = blocks.filter(b => b !== obj);
+        connections = connections.filter(c => c.from !== obj && c.to !== obj);
+        userDialog = userDialog.filter(b => b.id !== id);
+        userDialog.forEach(b => { b.options = b.options.filter(opt => opt.targetId !== id); });
+        draw();
+    };
+
+    // перетаскивание
+    div.onmousedown = e=>{
+        let dx=e.offsetX, dy=e.offsetY;
+        function move(ev){ obj.x=ev.clientX-dx; obj.y=ev.clientY-dy; div.style.left=obj.x+"px"; div.style.top=obj.y+"px"; draw(); }
+        function up(){ window.removeEventListener("mousemove",move); window.removeEventListener("mouseup",up);}
+        window.addEventListener("mousemove",move);
+        window.addEventListener("mouseup",up);
+    }
+
+    output.onmousedown = e=>{ e.stopPropagation(); draggingLine={from:obj}; }
+    input.onmouseup = e=>{
+        if(draggingLine){
+            const fromBlock = userDialog.find(b => b.id === draggingLine.from.blockId);
+            const toBlock = userDialog.find(b => b.id === obj.blockId);
+            if(fromBlock && toBlock){
+                fromBlock.options.push({
+                    targetId: toBlock.id,
+                    text: toBlock.text
+                });
+            }
+            connections.push({ from: draggingLine.from, to: obj });
+            draggingLine = null;
+        }
+    }
+
+    document.getElementById("charName").value="";
+    document.getElementById("dialogText").value="";
+}
+
+// -------------------
+// Показ диалога по ID
+// -------------------
+const dialogBox = document.getElementById("dialogBox");
+const nameEl = document.getElementById("name");
+const textEl = document.getElementById("text");
+
+function showReplicaById(blockId){
+    const block = userDialog.find(b => b.id === blockId);
+    if(!block) return dialogBox.style.display="none";
+
+    // показать диалог
+    dialogBox.style.display = "block";
+
+    if(block.audio){
+        playAudio(block.audio);
+    } else {
+        stopAudio();
+    }
+
+    // меняем фон
+    applySceneState(block);
+
+    // показываем реплику
+    nameEl.innerText = block.name;
+    textEl.innerText = block.text;
+
+    // удаляем старые кнопки
+    const oldBtns = dialogBox.querySelectorAll("button.dialogOption");
+    oldBtns.forEach(b => b.remove());
+
+    if(block.options.length > 0){
+        block.options.forEach(opt => {
+            const targetBlock = userDialog.find(b => b.id === opt.targetId);
+            const btn = document.createElement("button");
+            btn.className = "dialogOption";
+            btn.innerText = opt.text || (targetBlock ? targetBlock.text : "Выбор");
+            btn.onclick = () => showReplicaById(opt.targetId);
+            dialogBox.appendChild(btn);
+        });
+    } else {
+        const btn = document.createElement("button");
+        btn.className = "dialogOption";
+        btn.innerText = "Конец";
+        btn.onclick = () => {
+            dialogBox.style.display = "none";
+
+            // Останавливаем музыку
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+        };
+        dialogBox.appendChild(btn);
+    }
+}
+
+function playDialog(){ 
+    if(userDialog.length===0) return;
+
+    // ищем блок, у которого НЕТ входящих связей
+    const targets = connections.map(c => c.to.blockId);
+    const startBlock = userDialog.find(b => !targets.includes(b.id));
+
+    showReplicaById(startBlock ? startBlock.id : userDialog[0].id);
+}
+
+document.getElementById("closeLogicBtn").onclick = () => {
+    logic.style.display = "none"; // просто скрываем панель
+};
+
+// -------------------
+// УДАЛЕНИЕ СОЕДИНЕНИЙ
+// -------------------
+let hoveredConnection = null;
+
+canvas.addEventListener("mousemove", e => {
+    hoveredConnection = null;
+    connections.forEach(c => {
+        const fromRect = c.from.el.getBoundingClientRect();
+        const toRect = c.to.el.getBoundingClientRect();
+
+        const x1 = fromRect.right;
+        const y1 = fromRect.top + fromRect.height / 2;
+
+        const x2 = toRect.left;
+        const y2 = toRect.top + toRect.height / 2;
+
+        // вычисляем расстояние от курсора до линии
+        const dist = pointLineDistance(e.clientX, e.clientY, x1, y1, x2, y2);
+        if (dist < 5) hoveredConnection = c;
+    });
+});
+
+document.addEventListener("keydown", e => {
+    if (e.key === "Delete" && hoveredConnection) {
+        // удалить соединение из connections
+        const fromBlock = userDialog.find(b => b.id === hoveredConnection.from.blockId);
+        if (fromBlock) {
+            fromBlock.options = fromBlock.options.filter(opt => opt.targetId !== hoveredConnection.to.blockId);
+        }
+        connections = connections.filter(c => c !== hoveredConnection);
+        hoveredConnection = null;
+    }
+});
+
+// функция для расстояния от точки до линии
+function pointLineDistance(px, py, x1, y1, x2, y2) {
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    if (len_sq !== 0) param = dot / len_sq;
+
+    let xx, yy;
+
+    if (param < 0) {
+        xx = x1;
+        yy = y1;
+    } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+    } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+    }
+
+    const dx = px - xx;
+    const dy = py - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Подсветка соединения при наведении
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    connections.forEach(c => {
+        const fromRect = c.from.el.getBoundingClientRect();
+        const toRect = c.to.el.getBoundingClientRect();
+
+        const x1 = fromRect.right;
+        const y1 = fromRect.top + fromRect.height / 2;
+
+        const x2 = toRect.left;
+        const y2 = toRect.top + toRect.height / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = (c === hoveredConnection) ? "red" : "white";
+        ctx.lineWidth = (c === hoveredConnection) ? 3 : 1;
+        ctx.stroke();
+    });
+}
+
+function captureSceneState() {
+    return {
+        bg: bgImage ? `url(${bgImage}) center/cover` : null,
+        sprites: sprites.map(s => ({
+            src: s.el.src,
+            x: s.x,
+            y: s.y,
+            scale: s.scale
+        }))
+    };
+}
+
+function applySceneState(block) {
+    // фон
+    if (block.bg) {
+        scene.style.background = block.bg;
+        scene.style.backgroundSize = "100% 100%"; // растягиваем
+    }
+
+    // удалить старые спрайты
+    sprites.forEach(s => s.el.remove());
+    sprites = [];
+
+    // восстановить спрайты
+    block.sprites.forEach(s => {
+        createSprite(s.src, s.x, s.y);
+        const newSprite = sprites[sprites.length - 1];
+        newSprite.scale = s.scale;
+        newSprite.el.style.transform = `scale(${s.scale})`;
+    });
+}
+
+function deleteSprite() {
+    if (!selectedSprite) return;
+
+    // удалить из DOM
+    selectedSprite.el.remove();
+
+    // удалить из массива
+    sprites = sprites.filter(s => s !== selectedSprite);
+
+    selectedSprite = null;
+}
+
+function resizePanels() {
+    const w = window.innerWidth;
+
+    // левая панель
+    if (w > 1000) {
+        assets.style.width = "200px";
+    } else if (w > 700) {
+        assets.style.width = (w * 0.15) + "px"; // 15% ширины
+    } else {
+        assets.style.width = "50px"; // минимальная ширина
+    }
+
+    // правая панель
+    if (w > 1000) {
+        panel.style.width = "300px";
+    } else if (w > 700) {
+        panel.style.width = (w * 0.2) + "px"; // 20% ширины
+    } else {
+        panel.style.width = "50px";
+    }
+}
+
+window.addEventListener("resize", resizePanels);
+resizePanels();
+
+setInterval(draw,30);
+
+</script>
+</body>
+</html>
