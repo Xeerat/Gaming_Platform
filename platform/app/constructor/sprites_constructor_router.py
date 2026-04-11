@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Form, Request, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
@@ -8,13 +8,12 @@ from app.dao.dao_models import SpriteDAO
 from app.constructor.validation import SCharSave
 from app.users.auth import decode_access_token
 from app.users.router import redirect_message
+from app.migration.models import Sprite
 
-from urllib.parse import quote
 
+router = APIRouter(prefix='/sprites', tags=['Sprites'])
 
-router = APIRouter(prefix='/characters', tags=['Characters'])
-
-@router.post("/add_character/")
+@router.post("/add_sprites/")
 async def add_character(
     request: Request,
     sprite: SCharSave
@@ -55,3 +54,24 @@ async def add_character(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": "Ошибка базы данных"}
         )
+    
+
+@router.get("/get_all_sprites/", response_model=None)
+async def get_all_sprites(request: Request) -> RedirectResponse | list[Sprite]:
+    """Возвращает все спрайты пользователя."""
+
+    token = request.cookies.get("users_access_token")
+
+    if not token:
+        return redirect_message(url='/auth/login/')
+    
+    try:
+        email = decode_access_token(token)
+        return await SpriteDAO.find_all_sprites(email=email)
+        
+    except JWTError:
+        return redirect_message(url='/auth/login/')
+
+    except LookupError:
+        return redirect_message(url='/auth/login/')
+    

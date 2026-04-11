@@ -177,9 +177,10 @@ main {
     font-weight: bold;
 }
 
+/* ====== Тот кто разбирается в css поправтье что надо, пожалуйста? ====== */
 #fileManager {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between;  /* Кнопки по краям, файлы между ними */
     align-items: center;
     height: 80px;
     padding: 0 20px;
@@ -189,25 +190,93 @@ main {
     backdrop-filter: blur(5px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     margin-top: 20px;
+    gap: 15px;  /* ← ДОБАВЬ это, чтобы был отступ между элементами */
 }
 
+/* Контейнер для файлов (между кнопками) */
+#fileManager .files-container {
+    display: flex;
+    gap: 10px;
+    flex: 1;  /* Занимает всё свободное место между кнопками */
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 5px 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* НЕ должно быть position: absolute или height: 100vh! */
+}
 
-.trash {
-    padding: 10px 20px;
-    background: rgba(255,0,0,0.1);
+#fileManager .files-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Карточка файла */
+.file-card {
+    min-width: 60px;
+    max-width: 60px;
+    height: 70px;  /* ← ФИКСИРОВАННАЯ ВЫСОТА */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;  /* Центрируем по вертикали */
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 2em; 
+    transition: all 0.2s ease;
+    flex-shrink: 0;  /* Не сжиматься */
+}
+
+.file-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.file-icon {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+}
+
+.file-name {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    word-break: break-word;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Кнопки */
+.trash, .reload {
+    flex-shrink: 0;  /* Не сжиматься */
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    font-size: 1.5em;
+    border-radius: 8px;
     display: flex;
     align-items: center;
-    justify-content: center; 
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.trash {
+    background: rgba(255,0,0,0.1);
 }
 
 .trash:hover {
     background: rgba(255,0,0,0.3);
     transform: scale(1.05);
 }
+
 
 .reload {
     padding: 10px 20px;
@@ -227,6 +296,8 @@ main {
     background: var(--btn-hover-gradient);
     transform: scale(1.05);
 }
+
+/* ___________ ДО СЮДА ИДЕТ ФАЙЛ МЕНЕДЖЕР____________ */
 
 #mapSizeButtons {
     margin: 15px 0;

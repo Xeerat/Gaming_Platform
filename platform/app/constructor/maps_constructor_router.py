@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Form, Request, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
@@ -7,8 +7,8 @@ from jose.exceptions import ExpiredSignatureError, JWTError
 from app.dao.dao_models import MapDAO
 from app.constructor.validation import SMapSave
 from app.users.auth import decode_access_token
-
-from urllib.parse import quote
+from app.users.router import redirect_message
+from app.migration.models import Map
 
 
 router = APIRouter(prefix='/maps', tags=['Maps'])
@@ -54,3 +54,24 @@ async def add_map(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": "Ошибка базы данных"}
         )
+    
+
+@router.get("/get_all_maps/", response_model=None)
+async def get_all_maps(request: Request) -> RedirectResponse | list[Map]:
+    """Возвращает все карты пользователя."""
+
+    token = request.cookies.get("users_access_token")
+
+    if not token:
+        return redirect_message(url='/auth/login/')
+
+    try:
+        email = decode_access_token(token)
+        return await MapDAO.find_all_maps(email=email)
+        
+    except JWTError:
+        return redirect_message(url='/auth/login/')
+
+    except LookupError:
+        return redirect_message(url='/auth/login/')
+    
