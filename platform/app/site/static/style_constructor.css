@@ -1,0 +1,377 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+    --header-gradient: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    --btn-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --btn-hover-gradient: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    --btn-glow: 0 0 20px rgba(118, 75, 162, 0.6);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --text-color: #ffffff;
+    --panel-bg: #222;
+    --right-panel-bg: #111;
+    --accent-color: #ff4fff;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    height: 100vh;
+}
+
+/* ====== ЛЕВАЯ ПАНЕЛЬ ====== */
+#assets {
+    width: 200px;
+    background: var(--panel-bg);
+    color: var(--text-color);
+    padding: 15px;
+    border-right: 1px solid var(--glass-border);
+    backdrop-filter: blur(5px);
+    overflow-y: auto;
+}
+
+#assets h3 {
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+}
+
+#assets input,
+#assets button {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#assets button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+/* ====== ЛЕВАЯ ПАНЕЛЬ ====== */
+#assets {
+    width: 200px;
+    background: var(--panel-bg);
+    color: var(--text-color);
+    padding: 15px;
+    border-right: 1px solid var(--glass-border);
+    backdrop-filter: blur(5px);
+    overflow-y: auto;
+}
+
+#assets h3 {
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+}
+
+#assets input {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+#assets button {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--btn-gradient);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+}
+
+#assets button:hover {
+    background: var(--btn-hover-gradient);
+    transform: translateY(-2px);
+    box-shadow: var(--btn-glow);
+}
+
+#assets button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(118, 75, 162, 0.4);
+}
+
+/* ====== СЦЕНА ====== */
+#scene {
+    flex: 1;
+    position: relative;
+    background: linear-gradient(135deg, #2a1a4a, #3a2a6a);
+    overflow: hidden;
+    border-radius: 12px;
+    margin: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.sprite {
+    position: absolute;
+    width: 100px;
+    cursor: grab;
+    user-select: none;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+}
+
+.sprite:hover {
+    transform: scale(1.05);
+}
+
+/* ====== ПРАВАЯ ПАНЕЛЬ ====== */
+#panel {
+    width: 300px;
+    background: var(--right-panel-bg);
+    color: var(--text-color);
+    padding: 15px;
+    border-left: 1px solid var(--glass-border);
+    backdrop-filter: blur(5px);
+    overflow-y: auto;
+}
+
+#panel h3 {
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+}
+
+#panel input {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+#panel button {
+    width: 100%;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 8px;
+    background: var(--btn-gradient);
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+}
+
+#panel button:hover {
+    background: var(--btn-hover-gradient);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--btn-glow);
+}
+
+#panel button:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+/* ====== ДИАЛОГОВОЕ ОКНО ====== */
+#dialogBox {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 150px;
+    background: rgba(0, 0, 0, 0.85);
+    color: var(--text-color);
+    padding: 20px;
+    box-sizing: border-box;
+    font-size: 18px;
+    display: none;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--glass-border);
+}
+
+#name {
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+#dialogBox button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: var(--btn-gradient);
+    border: none;
+    border-radius: 8px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#dialogBox button:hover {
+    background: var(--btn-hover-gradient);
+}
+
+/* ====== ВИЗУАЛЬНАЯ ЛОГИКА ====== */
+#logic {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000000dd;
+    display: none;
+    z-index: 999;
+}
+
+#logicCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+.block {
+    position: absolute;
+    padding: 15px;
+    background: rgba(68, 68, 68, 0.9);
+    color: var(--text-color);
+    border-radius: 12px;
+    cursor: grab;
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+}
+
+.block:hover {
+    transform: scale(1.03);
+}
+
+
+.port {
+    width: 12px;
+    height: 12px;
+    background: var(--accent-color);
+    position: absolute;
+    border-radius: 50%;
+    cursor: crosshair;
+    box-shadow: 0 0 8px 2px rgba(255, 79, 255, 0.6);
+}
+.port.out { right: -5px; top: 50%; }
+.port.in { left: -5px; top: 50%; }
+
+.connection {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.connection.hovered {
+    stroke: var(--accent-color);
+    stroke-width: 4px;
+}
+
+#closeLogicBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: var(--btn-gradient);
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+    z-index: 10;
+}
+
+#closeLogicBtn:hover {
+    background: var(--btn-hover-gradient);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--btn-glow);
+}
+
+#closeLogicBtn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+#dialogBox {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 150px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 20px;
+    box-sizing: border-box;
+    font-size: 18px;
+    display: none;
+    z-index: 1000; 
+}
+
+.dialogOption {
+    margin: 5px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(102, 126, 234, 0.8);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.dialogOption:hover {
+    background: rgba(118, 75, 162, 0.9);
+    transform: scale(1.05);
+}
+
+.dialogOption:active {
+    transform: scale(0.98);
+}
+
+#name {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Для экранов меньше 1000px */
+@media (max-width: 1000px) {
+    #assets {
+        width: 150px; /* уменьшаем левую панель */
+        font-size: 14px; 
+    }
+    #panel {
+        width: 200px; /* уменьшаем правую панель */
+        font-size: 14px; 
+    }
+}
+
+/* Для экранов меньше 700px */
+@media (max-width: 700px) {
+    #assets, #panel {
+        width: 50px; /* почти скрываем */
+        overflow: hidden;
+    }
+    #assets h3, #panel h3, #assets input, #panel input, #assets button, #panel button {
+        display: none; /* скрываем контент панелей */
+    }
+}
