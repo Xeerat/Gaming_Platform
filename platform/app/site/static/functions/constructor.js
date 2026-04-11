@@ -1,153 +1,469 @@
-(() => {
-    // ------------------------------------
-    // Настройки тайлов и карты
-    // ------------------------------------
-    const tileSize = 32;
-    const tiles = [
-        {id:0,color:'#ffffff'}, {id:1,color:'#00ff00'},
-        {id:2,color:'#8B4513'}, {id:3,color:'#0000ff'},
-        {id:4,color:'#808080'}
-    ];
-    let selectedTile = 1;
-    const mapWidth = 20;
-    const mapHeight = 15;
-    let mapMatrix = [];
-    let graphics;
-    let phaserGame;
+let currentAudio = null; // единственный объект аудио
 
-    // -------------------------------
-    // Создание пустой карты
-    // -------------------------------
-    function createEmptyMap(width,height){
-        return Array.from({length:height},()=>Array(width).fill(0));
+function stopAudio() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+}
+
+function playAudio(src) {
+    if (!src) return;
+
+    // если текущий объект не создан, создаём
+    if (!currentAudio) {
+        currentAudio = new Audio(src);
+        currentAudio.loop = true;
+        currentAudio.play().catch(e => console.log("Ошибка воспроизведения:", e));
+    } else if (currentAudio.src !== src) {
+        // если другой файл, меняем src
+        currentAudio.pause();
+        currentAudio.src = src;
+        currentAudio.currentTime = 0;
+        currentAudio.play().catch(e => console.log("Ошибка воспроизведения:", e));
+    } else if (currentAudio.paused) {
+        // если тот же файл, но на паузе
+        currentAudio.play().catch(e => console.log("Ошибка воспроизведения:", e));
+    }
+}
+
+let audioFile = null;
+
+audioLoader.onchange = e => {
+    if(e.target.files[0]) {
+        audioFile = URL.createObjectURL(e.target.files[0]);
+    }
+};
+
+const scene = document.getElementById("scene");
+let selectedSprite = null;
+let sprites = [];
+
+// -------------------
+// ПРОВЕРКА НА ВВОД
+// -------------------
+x.addEventListener("input", () => {
+    x.value = x.value.replace(/[^0-9.-]/g,''); // оставляем только цифры, точку и минус
+    updateSprite();
+});
+y.addEventListener("input", () => {
+    y.value = y.value.replace(/[^0-9.-]/g,'');
+    updateSprite();
+});
+
+// -------------------
+// СПРАЙТЫ
+// -------------------
+function createSprite(src, x, y) {
+    const img = document.createElement("img");
+    img.src = src;
+    img.className = "sprite";
+
+    const sprite = { el: img, x, y, scale: 1 };
+    img.style.left = x + "px";
+    img.style.top = y + "px";
+
+    img.onclick = () => selectSprite(sprite);
+    scene.appendChild(img);
+    sprites.push(sprite);
+}
+
+function selectSprite(sprite) {
+    selectedSprite = sprite;
+    x.value = sprite.x;
+    y.value = sprite.y;
+    scale.value = sprite.scale;
+}
+
+function updateSprite() {
+    if (!selectedSprite) return;
+    selectedSprite.x = +x.value;
+    selectedSprite.y = +y.value;
+    selectedSprite.scale = +scale.value;
+    selectedSprite.el.style.left = selectedSprite.x + "px";
+    selectedSprite.el.style.top = selectedSprite.y + "px";
+    selectedSprite.el.style.transform = `scale(${selectedSprite.scale})`;
+}
+
+x.oninput = updateSprite;
+y.oninput = updateSprite;
+scale.oninput = updateSprite;
+let selectedConnection = null;
+
+scene.addEventListener("mousedown", e => {
+    if (!e.target.classList.contains("sprite")) return;
+    const sprite = sprites.find(s => s.el === e.target);
+
+    const sceneRect = scene.getBoundingClientRect(); // координаты сцены
+    const offsetX = (e.clientX - sprite.el.getBoundingClientRect().left) / sprite.scale;
+    const offsetY = (e.clientY - sprite.el.getBoundingClientRect().top) / sprite.scale;
+
+    function move(ev) {
+        sprite.x = (ev.clientX - sceneRect.left) - offsetX;
+        sprite.y = (ev.clientY - sceneRect.top) - offsetY;
+        sprite.el.style.left = sprite.x + "px";
+        sprite.el.style.top = sprite.y + "px";
     }
 
-    // -------------------------------
-    // Рисование карты
-    // -------------------------------
-    function drawMap(){
-        graphics.clear();
-        for(let y=0;y<mapHeight;y++){
-            for(let x=0;x<mapWidth;x++){
-                const tileId = mapMatrix[y][x];
-                const color = Phaser.Display.Color.HexStringToColor(tiles[tileId].color).color;
-                graphics.fillStyle(color,1);
-                graphics.fillRect(x*tileSize,y*tileSize,tileSize,tileSize);
-                graphics.lineStyle(1,0x000000,0.2);
-                graphics.strokeRect(x*tileSize,y*tileSize,tileSize,tileSize);
+    function up() {
+        window.removeEventListener("mousemove", move);
+        window.removeEventListener("mouseup", up);
+    }
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+});
+
+let spriteImage = null;
+spriteLoader.onchange = e => { if(e.target.files[0]) spriteImage = URL.createObjectURL(e.target.files[0]); };
+function addSprite() { if(!spriteImage) return; createSprite(spriteImage,100,100); }
+
+let bgImage = null;
+bgLoader.onchange = e => { if(e.target.files[0]) bgImage = URL.createObjectURL(e.target.files[0]); };
+function setBackground() {
+    if (!bgImage) return;
+    scene.style.background = `url(${bgImage}) no-repeat center center`;
+    scene.style.backgroundSize = "100% 100%"; // всегда растягиваем на весь экран
+}
+
+// -------------------
+// ЛОГИКА
+// -------------------
+const logic = document.getElementById("logic");
+const canvas = document.getElementById("logicCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+let blocks = [];
+let connections = [];
+let draggingLine = null;
+
+function openLogic() { logic.style.display = "block"; }
+
+// -------------------
+// ДИАЛОГОВЫЕ БЛОКИ С ВИЗУАЛЬНОЙ ЛОГИКОЙ
+// -------------------
+function generateId() { return 'id'+Math.random().toString(36).substr(2,9); }
+
+let userDialog = [];
+
+function addReplicaBlock() {
+    const name = document.getElementById("charName").value || "Описание";
+    const text = document.getElementById("dialogText").value;
+    if(!text) return;
+    const id = generateId();
+    const sceneState = captureSceneState();
+
+    // создаём визуальный блок
+    const div = document.createElement("div");
+    div.className="block";
+    div.innerText = name+"\n"+text;
+    div.style.left="100px"; 
+    div.style.top="100px";
+
+    // кнопка удаления
+    const deleteBtn = document.createElement("button");
+    deleteBtn.innerText = "X";
+    deleteBtn.style.position = "absolute";
+    deleteBtn.style.top = "0";
+    deleteBtn.style.right = "0";
+    div.appendChild(deleteBtn);
+
+    const block = {
+        id,
+        name,
+        text,
+        bg: sceneState.bg,
+        sprites: sceneState.sprites,
+        audio: audioFile || null,
+        options: []
+    };
+    userDialog.push(block);
+
+    document.getElementById("charName").value="";
+    document.getElementById("dialogText").value="";
+
+    const input = document.createElement("div"); input.className="port in"; div.appendChild(input);
+    const output = document.createElement("div"); output.className="port out"; div.appendChild(output);
+    logic.appendChild(div);
+
+    const obj = { el: div, input, output, x:100, y:100, blockId:id };
+    blocks.push(obj);
+
+    // обработчик удаления
+    deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        div.remove();
+        blocks = blocks.filter(b => b !== obj);
+        connections = connections.filter(c => c.from !== obj && c.to !== obj);
+        userDialog = userDialog.filter(b => b.id !== id);
+        userDialog.forEach(b => { b.options = b.options.filter(opt => opt.targetId !== id); });
+        draw();
+    };
+
+    // перетаскивание
+    div.onmousedown = e=>{
+        let dx=e.offsetX, dy=e.offsetY;
+        function move(ev){ obj.x=ev.clientX-dx; obj.y=ev.clientY-dy; div.style.left=obj.x+"px"; div.style.top=obj.y+"px"; draw(); }
+        function up(){ window.removeEventListener("mousemove",move); window.removeEventListener("mouseup",up);}
+        window.addEventListener("mousemove",move);
+        window.addEventListener("mouseup",up);
+    }
+
+    output.onmousedown = e=>{ e.stopPropagation(); draggingLine={from:obj}; }
+    input.onmouseup = e=>{
+        if(draggingLine){
+            const fromBlock = userDialog.find(b => b.id === draggingLine.from.blockId);
+            const toBlock = userDialog.find(b => b.id === obj.blockId);
+            if(fromBlock && toBlock){
+                fromBlock.options.push({
+                    targetId: toBlock.id,
+                    text: toBlock.text
+                });
             }
+            connections.push({ from: draggingLine.from, to: obj });
+            draggingLine = null;
         }
     }
 
-    function drawTile(pointer){
-        const x = Math.floor(pointer.x/tileSize);
-        const y = Math.floor(pointer.y/tileSize);
-        if(x>=0 && x<mapWidth && y>=0 && y<mapHeight){
-            mapMatrix[y][x] = selectedTile;
-            drawMap();
-        }
+    document.getElementById("charName").value="";
+    document.getElementById("dialogText").value="";
+}
+
+// -------------------
+// Показ диалога по ID
+// -------------------
+const dialogBox = document.getElementById("dialogBox");
+const nameEl = document.getElementById("name");
+const textEl = document.getElementById("text");
+
+function showReplicaById(blockId){
+    const block = userDialog.find(b => b.id === blockId);
+    if(!block) return dialogBox.style.display="none";
+
+    // показать диалог
+    dialogBox.style.display = "block";
+
+    if(block.audio){
+        playAudio(block.audio);
+    } else {
+        stopAudio();
     }
 
-    function getMap(){ return mapMatrix.map(row=>[...row]); }
+    // меняем фон
+    applySceneState(block);
 
-    async function saveMap(){
-        const matrix = getMap();
-        const mapName = prompt("Введите название карты:");
-        if(!mapName){ alert("Название обязательно!"); return; }
-        console.log("Сохраняем карту:", mapName, matrix);
-        alert("Карта сохранена! (пример, без backend)");
-    }
+    // показываем реплику
+    nameEl.innerText = block.name;
+    textEl.innerText = block.text;
 
-    // -------------------------------
-    // Палитра тайлов
-    // -------------------------------
-    function createPalette(container){
-        container.innerHTML = '';
-        const paletteDiv = document.createElement('div');
-        paletteDiv.id = 'palette';
-        tiles.forEach(tile=>{
-            const div = document.createElement('div');
-            div.classList.add('tile');
-            div.style.background = tile.color;
-            div.addEventListener('click',()=>{
-                selectedTile = tile.id;
-                document.querySelectorAll('.tile').forEach(t=>t.classList.remove('selected'));
-                div.classList.add('selected');
-            });
-            if(tile.id===selectedTile) div.classList.add('selected');
-            paletteDiv.appendChild(div);
+    // удаляем старые кнопки
+    const oldBtns = dialogBox.querySelectorAll("button.dialogOption");
+    oldBtns.forEach(b => b.remove());
+
+    if(block.options.length > 0){
+        block.options.forEach(opt => {
+            const targetBlock = userDialog.find(b => b.id === opt.targetId);
+            const btn = document.createElement("button");
+            btn.className = "dialogOption";
+            btn.innerText = opt.text || (targetBlock ? targetBlock.text : "Выбор");
+            btn.onclick = () => showReplicaById(opt.targetId);
+            dialogBox.appendChild(btn);
         });
-        container.appendChild(paletteDiv);
+    } else {
+        const btn = document.createElement("button");
+        btn.className = "dialogOption";
+        btn.innerText = "Конец";
+        btn.onclick = () => {
+            dialogBox.style.display = "none";
 
-        const saveBtn = document.createElement('button');
-        saveBtn.id = 'saveBtn';
-        saveBtn.textContent = "Сохранить карту";
-        saveBtn.addEventListener('click', saveMap);
-        container.appendChild(saveBtn);
-    }
-
-    // -------------------------------
-    // Инициализация Phaser
-    // -------------------------------
-    function initPhaser(container){
-        if(phaserGame) phaserGame.destroy(true);
-        mapMatrix = createEmptyMap(mapWidth,mapHeight);
-
-        const config = {
-            type: Phaser.AUTO,
-            width: container.clientWidth,
-            height: container.clientHeight - 70, // место под палитру
-            parent: container,
-            backgroundColor: '#ffffff',
-            scene:{
-                preload:()=>{},
-                create:function(){
-                    graphics = this.add.graphics();
-                    drawMap();
-                    this.input.on('pointerdown', pointer=>{
-                        drawTile(pointer);
-                        this.input.on('pointermove', drawTile);
-                    });
-                    this.input.on('pointerup', ()=>{
-                        this.input.off('pointermove', drawTile);
-                    });
-                },
-                update:()=>{}
+            // Останавливаем музыку
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
             }
         };
-        phaserGame = new Phaser.Game(config);
+        dialogBox.appendChild(btn);
     }
+}
 
-    // -------------------------------
-    // Переключение секций
-    // -------------------------------
-    function switchSection(section){
-        const container = document.getElementById('gameContainer');
-        container.innerHTML = '';
+function playDialog(){ 
+    if(userDialog.length===0) return;
 
-        document.querySelectorAll('header button').forEach(b=>b.classList.remove('active'));
-        document.getElementById('btn'+section.charAt(0).toUpperCase()+section.slice(1)).classList.add('active');
+    // ищем блок, у которого НЕТ входящих связей
+    const targets = connections.map(c => c.to.blockId);
+    const startBlock = userDialog.find(b => !targets.includes(b.id));
 
-        if(section==='map'){
-            createPalette(container);
-            initPhaser(container);
-        } else if(section==='characters'){
-            container.innerHTML = "<h2>Персонажи</h2><p>Здесь будут персонажи.</p>";
-        } else if(section==='quests'){
-            container.innerHTML = "<h2>Квесты</h2><p>Здесь будут квесты.</p>";
-        } else if(section==='logic'){
-            container.innerHTML = "<h2>Логика</h2><p>Редактор логики игры.</p>";
+    showReplicaById(startBlock ? startBlock.id : userDialog[0].id);
+}
+
+document.getElementById("closeLogicBtn").onclick = () => {
+    logic.style.display = "none"; // просто скрываем панель
+};
+
+// -------------------
+// УДАЛЕНИЕ СОЕДИНЕНИЙ
+// -------------------
+let hoveredConnection = null;
+
+canvas.addEventListener("mousemove", e => {
+    hoveredConnection = null;
+    connections.forEach(c => {
+        const fromRect = c.from.el.getBoundingClientRect();
+        const toRect = c.to.el.getBoundingClientRect();
+
+        const x1 = fromRect.right;
+        const y1 = fromRect.top + fromRect.height / 2;
+
+        const x2 = toRect.left;
+        const y2 = toRect.top + toRect.height / 2;
+
+        // вычисляем расстояние от курсора до линии
+        const dist = pointLineDistance(e.clientX, e.clientY, x1, y1, x2, y2);
+        if (dist < 5) hoveredConnection = c;
+    });
+});
+
+document.addEventListener("keydown", e => {
+    if (e.key === "Delete" && hoveredConnection) {
+        // удалить соединение из connections
+        const fromBlock = userDialog.find(b => b.id === hoveredConnection.from.blockId);
+        if (fromBlock) {
+            fromBlock.options = fromBlock.options.filter(opt => opt.targetId !== hoveredConnection.to.blockId);
         }
+        connections = connections.filter(c => c !== hoveredConnection);
+        hoveredConnection = null;
+    }
+});
+
+// функция для расстояния от точки до линии
+function pointLineDistance(px, py, x1, y1, x2, y2) {
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    if (len_sq !== 0) param = dot / len_sq;
+
+    let xx, yy;
+
+    if (param < 0) {
+        xx = x1;
+        yy = y1;
+    } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+    } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
     }
 
-    document.getElementById('btnMap').addEventListener('click',()=>switchSection('map'));
-    document.getElementById('btnCharacters').addEventListener('click',()=>switchSection('characters'));
-    document.getElementById('btnQuests').addEventListener('click',()=>switchSection('quests'));
-    document.getElementById('btnLogic').addEventListener('click',()=>switchSection('logic'));
+    const dx = px - xx;
+    const dy = py - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+}
 
-    // -------------------------------
-    // Инициализация первой секции
-    // -------------------------------
-    switchSection('map');
+// Подсветка соединения при наведении
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-})();
+    connections.forEach(c => {
+        const fromRect = c.from.el.getBoundingClientRect();
+        const toRect = c.to.el.getBoundingClientRect();
+
+        const x1 = fromRect.right;
+        const y1 = fromRect.top + fromRect.height / 2;
+
+        const x2 = toRect.left;
+        const y2 = toRect.top + toRect.height / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = (c === hoveredConnection) ? "red" : "white";
+        ctx.lineWidth = (c === hoveredConnection) ? 3 : 1;
+        ctx.stroke();
+    });
+}
+
+function captureSceneState() {
+    return {
+        bg: bgImage ? `url(${bgImage}) center/cover` : null,
+        sprites: sprites.map(s => ({
+            src: s.el.src,
+            x: s.x,
+            y: s.y,
+            scale: s.scale
+        }))
+    };
+}
+
+function applySceneState(block) {
+    // фон
+    if (block.bg) {
+        scene.style.background = block.bg;
+        scene.style.backgroundSize = "100% 100%"; // растягиваем
+    }
+
+    // удалить старые спрайты
+    sprites.forEach(s => s.el.remove());
+    sprites = [];
+
+    // восстановить спрайты
+    block.sprites.forEach(s => {
+        createSprite(s.src, s.x, s.y);
+        const newSprite = sprites[sprites.length - 1];
+        newSprite.scale = s.scale;
+        newSprite.el.style.transform = `scale(${s.scale})`;
+    });
+}
+
+function deleteSprite() {
+    if (!selectedSprite) return;
+
+    // удалить из DOM
+    selectedSprite.el.remove();
+
+    // удалить из массива
+    sprites = sprites.filter(s => s !== selectedSprite);
+
+    selectedSprite = null;
+}
+
+function resizePanels() {
+    const w = window.innerWidth;
+
+    // левая панель
+    if (w > 1000) {
+        assets.style.width = "200px";
+    } else if (w > 700) {
+        assets.style.width = (w * 0.15) + "px"; // 15% ширины
+    } else {
+        assets.style.width = "50px"; // минимальная ширина
+    }
+
+    // правая панель
+    if (w > 1000) {
+        panel.style.width = "300px";
+    } else if (w > 700) {
+        panel.style.width = (w * 0.2) + "px"; // 20% ширины
+    } else {
+        panel.style.width = "50px";
+    }
+}
+
+window.addEventListener("resize", resizePanels);
+resizePanels();
+
+setInterval(draw,30);
