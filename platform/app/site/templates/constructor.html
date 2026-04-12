@@ -15,17 +15,26 @@
     <button id="btnQuests">Квесты</button>
     <button id="btnDialog">Диалог</button>
     <button id="btnScene">Сцена</button>
+    <button onclick="confirmExit()" id="btnExit">Выход</button>
 </header>
 
 <main>
-  <div id="gameContainer"></div>
-  <div id="fileManager">
-            <div id="trashZone" class="trash">
-                🗑️
-            </div>
-            <button id="reloadBtn" class="reload">🔄</button>
+    <div id="gameContainer"></div>
+    <div id="fileManager">
+        <div id="trashZone" class="trash">
+            🗑️
         </div>
+        <button id="reloadBtn" class="reload">🔄</button>
+    </div>
 </main>
+
+<script>
+function confirmExit() {
+    if (confirm("Вы уверены, что хотите выйти?")) {
+        window.location.href = "/main/";
+    }
+}
+</script>
 
 <script src="/static/functions/constructor.js"></script>
 

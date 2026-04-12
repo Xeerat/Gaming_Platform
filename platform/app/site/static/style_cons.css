@@ -137,6 +137,29 @@ main {
     overflow: hidden;
 }
 
+#saveSpriteBtn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+
+    margin: 0;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #ffffff !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 1000;
+
+    background: var(--btn-gradient);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+    overflow: hidden;
+}
+
 #saveBtn:hover {
     background: var(--btn-hover-gradient);
     transform: translateY(-3px) scale(1.02);

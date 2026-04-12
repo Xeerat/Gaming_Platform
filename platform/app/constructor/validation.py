@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, model_validator
-from fastapi import Form 
+from pydantic import BaseModel
+
 from typing import List, Dict, Any
 
 
@@ -8,6 +8,7 @@ class SCharSave(BaseModel):
     
     sprite_name: str
     data: List[List[Dict[str, Any]]]
+
 
 class SMapSave(BaseModel):
     """Модель для сохранения map через JSON."""
