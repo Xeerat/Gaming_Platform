@@ -2,8 +2,8 @@ from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy import text, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
-from typing import List, Dict, Any
 
+from typing import List, Dict, Any
 from datetime import datetime
 
 
@@ -40,9 +40,8 @@ class User(Base):
     )
 
 
-
 class Map(Base):
-    """ORM-модель таблицы maps"""
+    """ORM-модель таблицы maps."""
 
     __tablename__ = "maps"
 
@@ -60,9 +59,8 @@ class Map(Base):
     extend_existing = True
 
 
-
 class Sprite(Base):
-    """ORM-модель таблицы sprites"""
+    """ORM-модель таблицы sprites."""
 
     __tablename__ = "sprites"
 

@@ -285,10 +285,41 @@
         }
     }
 
+    async function saveSprite(){
+        const matrix = getMap();
+        const spriteName = prompt("Введите название спрайта:");
+        if(!spriteName){ alert("Название обязательно!"); return; }
+
+        const payload = {
+            sprite_name: spriteName,
+            data: matrix
+        };
+
+        try {
+            const response = await fetch("/sprites/add_sprite/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload)
+            });
+
+            if(!response.ok){
+                const data = await response.json();
+                alert("Ошибка: " + (data.detail || "неизвестная"));
+                return;
+            }
+
+            alert("Спрайт сохранён!");
+        } catch(e){
+            console.error(e);
+            alert("Ошибка сети");
+        }
+    }
+
     // -------------------------------
     // Палитра тайлов с слайдером
     // -------------------------------
-    function createPalette(container){
+    function createPalette(container, flag){
         const paletteDiv = document.createElement('div');
         paletteDiv.id = 'palette';
         container.appendChild(paletteDiv);
@@ -351,10 +382,20 @@
         });
 
         const saveBtn = document.createElement('button');
-        saveBtn.id = 'saveMapBtn';
-        saveBtn.textContent = "Сохранить";
-        saveBtn.addEventListener('click', saveMap);
-        container.appendChild(saveBtn);
+        if (flag === "map")
+        {
+            saveBtn.id = 'saveMapBtn';
+            saveBtn.textContent = "Сохранить";
+            saveBtn.addEventListener('click', saveMap);
+            container.appendChild(saveBtn);
+        }
+        else if (flag === "sprite")
+        {
+            saveBtn.id = 'saveSpriteBtn';
+            saveBtn.textContent = "Сохранить";
+            saveBtn.addEventListener('click', saveSprite);
+            container.appendChild(saveBtn);
+        }
     }
 
     // -------------------------------
@@ -405,7 +446,7 @@
                 <div id="paletteContainer"></div>
                 <div id="phaserContainer" style="height: 500px;"></div>
             `;
-            createPalette(document.getElementById('paletteContainer'));
+            createPalette(document.getElementById('paletteContainer'), flag="map");
             createMapSizeButtons(document.getElementById('paletteContainer'));
             // const toolContainer = document.createElement('div');
             // toolContainer.id = 'toolContainer';
@@ -429,7 +470,7 @@
                 <div id="paletteContainer"></div>
                 <div id="phaserContainer" style="height: 500px;"></div>
             `;
-            createPalette(document.getElementById('paletteContainer'));
+            createPalette(document.getElementById('paletteContainer'), flag="sprite");
             initPhaser(document.getElementById('phaserContainer'));
         } else if(section==='quests'){
             container.innerHTML = "<h2>Квесты</h2><p>Здесь будут квесты.</p>";

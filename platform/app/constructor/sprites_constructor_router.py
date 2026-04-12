@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Form, Request, Depends, status
+from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
-from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
 
@@ -13,14 +12,22 @@ from app.migration.models import Sprite
 
 router = APIRouter(prefix='/sprites', tags=['Sprites'])
 
-@router.post("/add_sprites/")
+
+@router.post("/add_sprite/", response_model=None)
 async def add_character(
     request: Request,
     sprite: SCharSave
-):
-    """Сохраняет спрайта"""
+) -> JSONResponse | RedirectResponse:
+    """Сохраняет спрайт в базу данных."""
     
     token = request.cookies.get("users_access_token")
+    if not token:
+        return redirect_message(
+            url='/auth/login/',
+            message="Пользователь не авторизован.",
+            error=True
+        )
+    
     try:
         email = decode_access_token(token)
         await SpriteDAO.add_sprite(
@@ -39,16 +46,19 @@ async def add_character(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"detail": "Сессия истекла. Войдите заново."}
         )
+    
     except JWTError:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"detail": "Не авторизован"}
         )
+    
     except IntegrityError:
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content={"detail": "Спрайт с таким именем уже существует"}
         )
+    
     except SQLAlchemyError:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -57,21 +67,36 @@ async def add_character(
     
 
 @router.get("/get_all_sprites/", response_model=None)
-async def get_all_sprites(request: Request) -> RedirectResponse | list[Sprite]:
+async def get_all_sprites(
+    request: Request
+) -> RedirectResponse | list[Sprite] | None:
     """Возвращает все спрайты пользователя."""
 
     token = request.cookies.get("users_access_token")
-
     if not token:
-        return redirect_message(url='/auth/login/')
+        return redirect_message(
+            url='/auth/login/',
+            message="Пользователь не авторизован.",
+            error=True
+        )
     
     try:
         email = decode_access_token(token)
-        return await SpriteDAO.find_all_sprites(email=email)
-        
+        sprites = await SpriteDAO.find_all_sprites(email=email)
+
+        return sprites
+
+    except ExpiredSignatureError:
+        message = "Истек срок годности токена." 
+    
     except JWTError:
-        return redirect_message(url='/auth/login/')
+        message = "Возникла ошибка при работе с токеном."
 
     except LookupError:
-        return redirect_message(url='/auth/login/')
-    
+        message = "Пользователь не авторизован."
+
+    return redirect_message(
+        url='/auth/login/',
+        message=message,
+        error=True
+    )

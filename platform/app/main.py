@@ -3,8 +3,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app.users.router import router as router_users
-from app.constructor.sprites_constructor_router import router as sprite_router
+from app.users.router import router as users_router
+from app.constructor.sprites_constructor_router import router as sprites_router
 from app.constructor.maps_constructor_router import router as maps_router
 
 from typing import Optional
@@ -12,8 +12,8 @@ from typing import Optional
 
 app = FastAPI()
 
-app.include_router(router_users)
-app.include_router(sprite_router)
+app.include_router(users_router)
+app.include_router(sprites_router)
 app.include_router(maps_router)
 
 app.mount('/static', StaticFiles(directory="app/site/static"), name="static")

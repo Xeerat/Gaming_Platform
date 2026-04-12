@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Form, Request, Depends, status
+from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
-from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
 
@@ -13,14 +12,22 @@ from app.migration.models import Map
 
 router = APIRouter(prefix='/maps', tags=['Maps'])
 
-@router.post("/add_map/")
+
+@router.post("/add_map/", response_model=None)
 async def add_map(
     request: Request,
     map_data: SMapSave
-):
-    """Сохраняет карту"""
+) -> JSONResponse | RedirectResponse:
+    """Сохраняет карту в базу данных."""
     
     token = request.cookies.get("users_access_token")
+    if not token:
+        return redirect_message(
+            url='/auth/login/',
+            message="Пользователь не авторизован.",
+            error=True
+        )
+    
     try:
         email = decode_access_token(token)
         await MapDAO.add_map(
@@ -39,16 +46,19 @@ async def add_map(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"detail": "Сессия истекла. Войдите заново."}
         )
+    
     except JWTError:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"detail": "Не авторизован"}
         )
+    
     except IntegrityError:
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content={"detail": "Карта с таким именем уже существует"}
         )
+    
     except SQLAlchemyError:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -57,21 +67,36 @@ async def add_map(
     
 
 @router.get("/get_all_maps/", response_model=None)
-async def get_all_maps(request: Request) -> RedirectResponse | list[Map]:
+async def get_all_maps(
+    request: Request
+) -> RedirectResponse | list[Map] | None:
     """Возвращает все карты пользователя."""
 
     token = request.cookies.get("users_access_token")
-
     if not token:
-        return redirect_message(url='/auth/login/')
+        return redirect_message(
+            url='/auth/login/',
+            message="Пользователь не авторизован.",
+            error=True
+        )
 
     try:
         email = decode_access_token(token)
-        return await MapDAO.find_all_maps(email=email)
-        
-    except JWTError:
-        return redirect_message(url='/auth/login/')
+        maps = await MapDAO.find_all_maps(email=email)
 
-    except LookupError:
-        return redirect_message(url='/auth/login/')
+        return maps
+        
+    except ExpiredSignatureError:
+        message = "Истек срок годности токена."
+
+    except JWTError:
+        message = "Возникла ошибка при работе с токеном."
     
+    except LookupError:
+        message = "Пользователь не авторизован."
+
+    return redirect_message(
+        url='/auth/login/',
+        message=message,
+        error=True
+    )
