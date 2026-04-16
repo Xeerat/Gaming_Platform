@@ -38,7 +38,7 @@ def test_create_access_token_correct_time(
     email = "hello@mail.ru"
 
     # Act
-    token = auth.create_access_token(email=email, for_email=for_email)
+    token = auth.create_access_token(email=email, for_email=for_email, user_id=0)
 
     # Assert
     if type_time == "m":
@@ -81,7 +81,7 @@ def test_create_access_token_incorrect_time(
     email = "hello@mail.ru"
 
     # Act
-    token = auth.create_access_token(email=email, for_email=for_email)
+    token = auth.create_access_token(email=email, for_email=for_email, user_id=0)
 
     # Assert
     if type_time == "m":
@@ -101,12 +101,12 @@ def test_create_access_token_incorrect_time(
     assert expire > time - 1
 
 
-@pytest.mark.parametrize("email", [
-    ("Hello@mail.ru"),
-    ("Hi_ggg@mail.ru"),
-    ("dd.dd@mail.ru"),
+@pytest.mark.parametrize("user_id", [
+    (1),
+    (2),
+    (3),
 ])
-def test_decode_access_token(email: str):
+def test_decode_access_token(user_id: int):
     """
     Проверка корректности расшифровки токена.
 
@@ -116,16 +116,16 @@ def test_decode_access_token(email: str):
 
     # Arrange
     token = jwt.encode(
-        {"email": email},
+        {"user_id": user_id},
         getenv("SECRET_KEY"), 
         getenv("ALGORITHM"),
     )
     
     # Act
-    answer_email = auth.decode_access_token(token=token)
+    answer_id = auth.decode_access_token(token=token)
 
     # Assert
-    assert answer_email == email
+    assert answer_id == user_id
     
     
 @pytest.mark.parametrize("password", [

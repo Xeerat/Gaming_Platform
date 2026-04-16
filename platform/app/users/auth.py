@@ -9,12 +9,13 @@ from aiosmtplib import SMTP
 from app.database import TOKEN_DATA, EMAIL_DATA
 
 
-def create_access_token(email: EmailStr, for_email: bool = False) -> str:
+def create_access_token(email: EmailStr, user_id: int, for_email: bool = False) -> str:
     """
     Создает токен для пользователя.
 
     Args:
         email: электронная почта пользователя.
+        user_id: id пользователя
         for_email: флаг для определения времени действия токена.
                 Если True, то время действия 15 минут.
                 Если False, то время действия 5 дней.
@@ -28,7 +29,7 @@ def create_access_token(email: EmailStr, for_email: bool = False) -> str:
     else:
         expire = datetime.now(timezone.utc) + timedelta(days=5)
 
-    data = {"exp": expire, "email": email}
+    data = {"exp": expire, "email": email, "user_id": user_id}
     token = jwt.encode(
         data, 
         key=TOKEN_DATA['secret_key'],
@@ -46,7 +47,7 @@ def decode_access_token(token: str) -> EmailStr:
         token: токен пользователя.
     
     Returns:
-        Почту пользователя.
+        Id пользователя.
     
     Raises:
         ExpiredSignatureError - если у токена истек срок годности.
@@ -59,7 +60,7 @@ def decode_access_token(token: str) -> EmailStr:
         TOKEN_DATA['algorithm'],
     )
 
-    return data["email"]
+    return data["user_id"]
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -111,7 +112,7 @@ async def send_verification_email(
             нажав на ссылку.
     """
 
-    token = create_access_token(email=email, for_email=True)
+    token = create_access_token(email=email, user_id=-1, for_email=True)
     link = f"http://localhost:8000{url_for_token}?token={token}"
 
     msg = MIMEText(f"{text} {link}")
