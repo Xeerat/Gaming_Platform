@@ -42,15 +42,17 @@ async def add_character(
         )
         
     except ExpiredSignatureError:
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Сессия истекла. Войдите заново."}
+        return redirect_message(
+            url='/auth/login/',
+            message="Пользователь не авторизован.",
+            error=True
         )
     
     except JWTError:
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Не авторизован"}
+        return redirect_message(
+            url='/auth/login/',
+            message="Пользователь не авторизован.",
+            error=True
         )
     
     except IntegrityError:
@@ -82,7 +84,7 @@ async def get_all_sprites(
     
     try:
         user_id = decode_access_token(token)
-        sprites = await SpriteDAO.find_all_sprites(email=user_id)
+        sprites = await SpriteDAO.find_all_sprites(user_id=user_id)
 
         return sprites
 

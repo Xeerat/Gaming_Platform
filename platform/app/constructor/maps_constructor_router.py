@@ -42,15 +42,17 @@ async def add_map(
         )
         
     except ExpiredSignatureError:
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Сессия истекла. Войдите заново."}
+        return redirect_message(
+            url='/auth/login/',
+            message="Пользователь не авторизован.",
+            error=True
         )
     
     except JWTError:
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Не авторизован"}
+        return redirect_message(
+            url='/auth/login/',
+            message="Пользователь не авторизован.",
+            error=True
         )
     
     except IntegrityError:
