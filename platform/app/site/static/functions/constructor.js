@@ -567,11 +567,6 @@
         });
     }
 
-    // -------------------------------
-    // Наведите красоты!!!!
-    // Пожалуйста?
-
-
     async function handleReload() {
         const fileManager = document.getElementById('fileManager');
         if (!fileManager) return;
@@ -610,6 +605,8 @@
 
             renderFileList(fileManager, allFiles);
 
+            setTimeout(setupDragAndDrop, 50);
+
         } catch (error) {
             window.location.href = '/auth/login/';
         }
@@ -642,20 +639,22 @@
         filesContainer.innerHTML = '';
 
         files.forEach(file => {
+
             const fileCard = document.createElement('div');
             fileCard.className = 'file-card';
+            fileCard.setAttribute('draggable', 'true');
             
             const uniqueId = `file-${file.fileType}-${file.id}`;
             fileCard.id = uniqueId;
             fileCard.dataset.fileId = file.id;
             fileCard.dataset.fileType = file.fileType;
             
-            const fileName = file.map_name || file.name || file.sprite_name || 'Без названия';
+            const fileName = file.mapname || file.name || file.sprite_name || 'Без названия';
             fileCard.dataset.fileName = fileName;
+            
 
             fileDataStore.set(uniqueId, file);
 
-            // 🔥 Разные иконки для карт и спрайтов
             const icon = file.fileType === 'map' ? '🗺️' : '🎨';
             
             fileCard.innerHTML = `
@@ -983,6 +982,101 @@
         }
     }
 
+    function setupDragAndDrop() {
+        const trash = document.getElementById('trashZone');
+        const container = document.querySelector('#fileManager .files-container');
+        
+        if (!trash || !container) return;
+
+        container.onmousedown = (e) => {
+            const card = e.target.closest('.file-card[draggable="true"]');
+            if (card) card.draggable = true;
+        };
+
+        container.addEventListener('dragstart', (e) => {
+            const card = e.target.closest('.file-card[draggable="true"]');
+            if (!card) return;
+
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                id: card.dataset.fileId,
+                type: card.dataset.fileType,
+                uniqueId: card.id,
+                name: card.dataset.fileName
+            }));
+            e.dataTransfer.effectAllowed = 'move';
+            
+            setTimeout(() => card.classList.add('dragging'), 0);
+        });
+
+        container.addEventListener('dragend', (e) => {
+            const card = e.target.closest('.file-card');
+            if (card) {
+                card.classList.remove('dragging');
+                card.style.opacity = '';
+            }
+            trash.classList.remove('drag-over');
+        });
+
+        trash.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            trash.classList.add('drag-over');
+        });
+
+        trash.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            trash.classList.add('drag-over');
+        });
+
+        trash.addEventListener('dragleave', (e) => {
+            if (!trash.contains(e.relatedTarget)) {
+                trash.classList.remove('drag-over');
+            }
+        });
+
+        trash.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            trash.classList.remove('drag-over');
+
+            try {
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                if (!data.id) throw new Error('Нет данных');
+
+                if (confirm(`Удалить "${data.name}"?`)) {
+                    // Формируем URL
+                    const endpoint = data.type === 'map' 
+                        ? `/maps/delete_map/${data.id}/` 
+                        : `/sprites/delete_sprite/${data.id}/`;
+
+                    fetch(endpoint, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Ошибка сервера');
+                        // Удаляем из DOM только если сервер ответил ОК
+                        const el = document.getElementById(data.uniqueId);
+                        if (el) el.remove();
+                    })
+                    .catch(err => {
+                        alert('Не удалось удалить: ' + err.message);
+                    });
+                }
+            } catch (err) {
+            }
+        });
+        
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (document.querySelector('.file-card')) {
+                setupDragAndDrop();
+            }
+        }, 800);
+    });
     // -------------------------------
     // Переключение секций
     // -------------------------------

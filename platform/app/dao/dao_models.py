@@ -238,7 +238,7 @@ class MapDAO(BaseDAO[Map]):
     @classmethod
     async def add_map(
         cls, 
-        email: EmailStr, 
+        user_id: int, 
         mapname: str, 
         data: List[List[int]],
     ) -> None:
@@ -256,12 +256,8 @@ class MapDAO(BaseDAO[Map]):
             TypeError - если были переданы некорректные значения.
         """
 
-        user = await UsersDAO.find_user(email)
-        if not user:
-            return
-                
         await super()._add_data(
-            user_id=user.id,
+            user_id=user_id,
             mapname=mapname,
             data=data
         )
@@ -269,15 +265,13 @@ class MapDAO(BaseDAO[Map]):
     @classmethod
     async def delete_map(
         cls, 
-        email: EmailStr, 
-        mapname: str, 
+        map_id: int, 
     ) -> bool:
         """
         Удаляют карту из базы данных.
 
         Args:
-            email: электронная почта пользователя.
-            mapname: название карты, которую нужно удалить.
+            map_id: id карты, которую нужно удалить
     
         Returns:
             True - если получилось удалить карту, иначе False.
@@ -285,21 +279,14 @@ class MapDAO(BaseDAO[Map]):
         Raises:
             SQLAlchemyError - если при удалении возникла ошибка.
         """
-
-        user = await UsersDAO.find_user(email)
-
-        if not user:
-            return False
-        
         return await super()._delete_data_where(
-            cls.model.user_id == user.id,
-            cls.model.mapname == mapname
+            cls.model.id == map_id,
         )
     
     @classmethod
     async def update_map(
         cls, 
-        email: EmailStr, 
+        user_id: int, 
         mapname: str, 
         new_data: List[List[int]],
     ) -> bool:
@@ -317,14 +304,9 @@ class MapDAO(BaseDAO[Map]):
         Raises:
             SQLAlchemyError - если возникла ошибка обновлении.
         """
-
-        user = await UsersDAO.find_user(email)
-
-        if not user:
-            return False
         
         await super()._update_data_where(
-            cls.model.user_id == user.id,
+            cls.model.user_id == user_id,
             cls.model.mapname == mapname,
             data = new_data
         )
@@ -332,7 +314,7 @@ class MapDAO(BaseDAO[Map]):
     @classmethod
     async def find_all_maps(
         cls,
-        email: EmailStr
+        user_id: int
     ) -> List[Map] | None:
         """
         Находит все карты пользователя в базе данных.
@@ -347,13 +329,8 @@ class MapDAO(BaseDAO[Map]):
             LookupError - если пользователя нет в базе даннных.
         """
 
-        user = await UsersDAO.find_user(email)
-
-        if not user:
-            return LookupError
-
         return await super()._find_all_data_where(
-            cls.model.user_id == user.id
+            cls.model.user_id == user_id
         )
 
 
@@ -365,7 +342,7 @@ class SpriteDAO(BaseDAO[Sprite]):
     @classmethod
     async def add_sprite(
         cls, 
-        email: EmailStr, 
+        user_id: int, 
         sprite_name: str,
         data: List[List[int]],
     ) -> None:
@@ -382,14 +359,9 @@ class SpriteDAO(BaseDAO[Sprite]):
             SQLAlchemyError - если возникла ошибка при добавлении.
             TypeError - если были переданы некорректные значения.
         """
-
-
-        user = await UsersDAO.find_user(email)
-        if not user:
-            return
                 
         await super()._add_data(
-            user_id=user.id,
+            user_id=user_id,
             sprite_name=sprite_name,
             data=data
         )
@@ -397,15 +369,13 @@ class SpriteDAO(BaseDAO[Sprite]):
     @classmethod
     async def delete_sprite(
         cls, 
-        email: EmailStr, 
-        sprite_name: str, 
+        sprite_id: int, 
     ) -> bool:
         """
         Удаляет спрайт из базы данных.
 
         Args:
-            email: электронная почта пользователя.
-            sprite_name: название спрайта, которого нужно удалить.
+            sprite_id: id спрайта.
     
         Returns:
             True - если получилось удалить спрайта, иначе False.
@@ -413,21 +383,15 @@ class SpriteDAO(BaseDAO[Sprite]):
         Raises:
             SQLAlchemyError - если при удалении возникла ошибка.
         """
-
-        user = await UsersDAO.find_user(email)
-
-        if not user:
-            return False
         
         return await super()._delete_data_where(
-            cls.model.user_id == user.id,
-            cls.model.sprite_name == sprite_name
+            cls.model.id == sprite_id,
         )
     
     @classmethod
     async def update_sprite(
         cls, 
-        email: EmailStr, 
+        user_id: int, 
         sprite_name: str, 
         new_data: List[List[int]],
     ) -> bool:
@@ -446,13 +410,8 @@ class SpriteDAO(BaseDAO[Sprite]):
             SQLAlchemyError - если возникла ошибка при добавлении.
         """
 
-        user = await UsersDAO.find_user(email)
-
-        if not user:
-            return False
-        
         await super()._update_data_where(
-            cls.model.user_id == user.id,
+            cls.model.user_id == user_id,
             cls.model.sprite_name == sprite_name,
             data = new_data
         )
@@ -460,7 +419,7 @@ class SpriteDAO(BaseDAO[Sprite]):
     @classmethod
     async def find_sprite(
         cls,
-        email: EmailStr,
+        user_id: int,
         sprite_name: str,
     ) -> Sprite | None:
         """
@@ -477,20 +436,15 @@ class SpriteDAO(BaseDAO[Sprite]):
             LookupError - если пользователя нет в базе данных.
         """
 
-        user = await UsersDAO.find_user(email)
-
-        if not user:
-            return LookupError
-
         return await super()._find_data_where(
-            cls.model.user_id == user.id,
+            cls.model.user_id == user_id,
             cls.model.sprite_name == sprite_name
         )
     
     @classmethod
     async def find_all_sprites(
         cls,
-        email: EmailStr
+        user_id: int
     ) -> List[Sprite] | None:
         """
         Находит все спрайты пользователя в базе данных.
@@ -505,11 +459,6 @@ class SpriteDAO(BaseDAO[Sprite]):
             LookupError - если пользователя нет в базе данных.
         """
 
-        user = await UsersDAO.find_user(email)
-
-        if not user:
-            return LookupError
-
         return await super()._find_all_data_where(
-            cls.model.user_id == user.id
+            cls.model.user_id == user_id
         )

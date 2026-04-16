@@ -120,7 +120,7 @@ async def auth_user(request: Request) -> RedirectResponse:
         )
 
     response = redirect_message(url="/main/")
-    token = create_access_token(email=data.email)
+    token = create_access_token(email=data.email, user_id=user.id)
     response.set_cookie(key="users_access_token", value=token, httponly=True)
     return response
 
@@ -201,7 +201,7 @@ async def verify_email(request: Request) -> RedirectResponse:
             message="Вы успешно зарегистрированы!",
             success=True,
         )
-        token = create_access_token(email=email)
+        token = create_access_token(email=email, user_id=user.id)
         response.set_cookie(
             key="users_access_token", 
             value=token,
@@ -287,7 +287,8 @@ async def update_password_user(request: Request) -> RedirectResponse:
             message="Пароль успешно изменен.",
             success=True,
         )
-        token = create_access_token(email=email)
+        user = await UsersDAO.find_user(email=email)
+        token = create_access_token(email=email, user_id=user.id)
         response.set_cookie(
             key="users_access_token", 
             value=token, 
