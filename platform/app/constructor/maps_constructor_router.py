@@ -29,9 +29,9 @@ async def add_map(
         )
     
     try:
-        email = decode_access_token(token)
+        user_id = decode_access_token(token)
         await MapDAO.add_map(
-            email=email,
+            user_id=user_id,
             mapname=map_data.map_name,
             data=map_data.data
         )
@@ -81,8 +81,8 @@ async def get_all_maps(
         )
 
     try:
-        email = decode_access_token(token)
-        maps = await MapDAO.find_all_maps(email=email)
+        user_id = decode_access_token(token)
+        maps = await MapDAO.find_all_maps(user_id=user_id)
 
         return maps
         
@@ -100,3 +100,12 @@ async def get_all_maps(
         message=message,
         error=True
     )
+
+
+@router.delete("/delete_map/{id}/")
+async def delete_map(
+    id: int
+) -> bool:
+    """Удаляет карту пользователя."""
+
+    return await MapDAO.delete_map(map_id=id)

@@ -29,9 +29,9 @@ async def add_character(
         )
     
     try:
-        email = decode_access_token(token)
+        user_id = decode_access_token(token)
         await SpriteDAO.add_sprite(
-            email=email,
+            email=user_id,
             sprite_name=sprite.sprite_name,
             data=sprite.data
         )
@@ -81,8 +81,8 @@ async def get_all_sprites(
         )
     
     try:
-        email = decode_access_token(token)
-        sprites = await SpriteDAO.find_all_sprites(email=email)
+        user_id = decode_access_token(token)
+        sprites = await SpriteDAO.find_all_sprites(email=user_id)
 
         return sprites
 
@@ -100,3 +100,11 @@ async def get_all_sprites(
         message=message,
         error=True
     )
+
+@router.delete("/delete_sprite/{id}/")
+async def delete_sprite(
+    id: int
+) -> bool:
+    """Удаляет спрайт пользователя."""
+
+    return await SpriteDAO.delete_sprite(sprite_id=id)
