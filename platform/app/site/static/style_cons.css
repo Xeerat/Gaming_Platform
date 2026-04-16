@@ -553,3 +553,156 @@ main,
 #gameContainer button.button:first-child:hover {
     background: rgba(118, 75, 162, 0.4);
 }
+
+/* ===== LOGIC CONTAINER ===== */
+#triggerList {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* карточка триггера */
+#triggerList .card {
+    background: rgba(118, 75, 162, 0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+}
+
+#triggerList .card:hover {
+    transform: scale(1.03);
+    background: rgba(118, 75, 162, 0.35);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    border-color: rgba(255,255,255,0.3);
+}
+
+/* редактор триггера */
+#triggerEditor {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 15px;
+    backdrop-filter: blur(10px);
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+#triggerEditor label {
+    display: block;
+    margin-top: 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+#triggerEditor input,
+#triggerEditor select {
+    width: 100%;
+    margin-top: 5px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.2);
+    color: #000;
+}
+
+#triggerEditor hr {
+    margin: 15px 0;
+    border: none;
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+}
+
+/* ===== SCENE LAYOUT ===== */
+#sceneContent {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Phaser canvas контейнер */
+#scenePhaser {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    background: #000;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* правая панель объектов */
+#objectEditor {
+    background: rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+}
+
+/* поля объекта */
+#objectFields {
+    margin-top: 10px;
+}
+
+#objectFields label {
+    display: block;
+    margin-top: 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    color: #fff;
+}
+
+#objectFields input {
+    width: 100%;
+    margin-top: 5px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.2);
+    color: #000;
+}
+
+/* кнопка запуска сцены */
+#runSceneBtn {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+
+    padding: 12px 20px;
+    border-radius: 12px;
+
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+
+    font-weight: 700;
+    cursor: pointer;
+
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    transition: 0.2s;
+    z-index: 10;
+}
+
+#runSceneBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(118, 75, 162, 0.6);
+}
+
+#runSceneBtn:active {
+    transform: scale(0.98);
+}
+
+
