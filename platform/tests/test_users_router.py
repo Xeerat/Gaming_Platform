@@ -104,17 +104,22 @@ async def test_register_user_success():
     request = AsyncMock()
     request.form = AsyncMock(return_value=form_data)
 
+    mock_user = AsyncMock()
+    mock_user.id = 1 
+
     SUserReg_path = "app.users.router.SUserRegister"
     add_user_path = "app.users.router.UsersDAO.add_user"
     get_pass_hash_path = "app.users.router.get_password_hash"
     send_ver_email_path = "app.users.router.send_verification_email"
     redirect_message_path = "app.users.router.redirect_message"
+    find_user_path = "app.users.router.UsersDAO.find_user"
 
     with patch(SUserReg_path) as mock_schema, \
          patch(add_user_path, new_callable=AsyncMock) as mock_add_user, \
          patch(get_pass_hash_path, return_value="hashed_pw"), \
          patch(send_ver_email_path, new_callable=AsyncMock) as mock_email, \
-         patch(redirect_message_path) as mock_redirect:
+         patch(redirect_message_path) as mock_redirect, \
+         patch(find_user_path, new_callable=AsyncMock, return_value=mock_user):
 
         mock_schema.return_value = mock_schema 
         mock_schema.return_value.username = form_data["username"]
@@ -463,7 +468,7 @@ async def test_delete_user_success():
         response = await users_router.delete_user(request)
 
         # Assert
-        mock_decode.assert_called_once_with("valid_token")
+        mock_decode.assert_called_once_with("valid_token", for_email=True)
         mock_delete.assert_awaited_once_with(email="test@test.com")
 
         mock_redirect.assert_called_once_with(
@@ -626,7 +631,7 @@ async def test_verify_email_success():
         response = await users_router.verify_email(request)
 
         # Assert
-        mock_decode.assert_called_once_with("valid_token")
+        mock_decode.assert_called_once_with("valid_token", for_email=True)
         mock_find.assert_awaited_once_with(email="test@test.com")
         mock_create_token.assert_called_once_with(
             email="test@test.com",
@@ -740,6 +745,7 @@ async def test_forgot_password_success():
     redirect_message_path = "app.users.router.redirect_message"
 
     mock_user = AsyncMock()
+    mock_user.id = 1
 
     with patch(SUserForgot_path) as mock_schema, \
          patch(send_email_path, new_callable=AsyncMock) as mock_email, \
@@ -767,6 +773,7 @@ async def test_forgot_password_success():
             title="Смена пароля.",
             text="Перейдите по ссылке, чтобы сменить пароль:",
             url_for_token="/auth/forgot_password/",
+            user_id=mock_user.id,
         )
         mock_redirect.assert_called_once_with(
             url="/auth/forgot_password/",
@@ -879,7 +886,7 @@ async def test_update_password_success():
 
         # Assert
         mock_schema.assert_called_once()
-        mock_decode.assert_called_once_with(token="valid_token")
+        mock_decode.assert_called_once_with(token="valid_token", for_email=True)
         mock_hash.assert_called_once_with(password="newpass")
         mock_update.assert_awaited_once_with(
             email="test@test.com", 

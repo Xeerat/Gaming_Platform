@@ -39,15 +39,16 @@ def create_access_token(email: EmailStr, user_id: int, for_email: bool = False) 
     return token
 
 
-def decode_access_token(token: str) -> EmailStr:
+def decode_access_token(token: str, for_email: bool = False) -> int | EmailStr:
     """
     Расшифровывает токен пользователя.
     
     Args:
         token: токен пользователя.
+        for_email: выбор что вернуть
     
     Returns:
-        Id пользователя.
+        Id пользователя или email пользователя
     
     Raises:
         ExpiredSignatureError - если у токена истек срок годности.
@@ -60,6 +61,9 @@ def decode_access_token(token: str) -> EmailStr:
         TOKEN_DATA['algorithm'],
     )
 
+    if for_email :
+        return data['email']
+    
     return data["user_id"]
 
 
@@ -100,6 +104,7 @@ async def send_verification_email(
         title: str,
         text: str,
         url_for_token: str,
+        user_id: int
 ) -> None:
     """
     Отправляет письмо верификации на почту пользователя.
@@ -112,7 +117,7 @@ async def send_verification_email(
             нажав на ссылку.
     """
 
-    token = create_access_token(email=email, user_id=-1, for_email=True)
+    token = create_access_token(email=email, user_id=user_id, for_email=True)
     link = f"http://localhost:8000{url_for_token}?token={token}"
 
     msg = MIMEText(f"{text} {link}")
