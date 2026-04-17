@@ -67,6 +67,7 @@ async def register_user(request: Request) -> RedirectResponse:
             email=data.email,
             password=get_password_hash(data.password),
         )
+        
 
     except ValidationError:
         message="Пароли не совпадают."
@@ -81,11 +82,14 @@ async def register_user(request: Request) -> RedirectResponse:
         message="Возникла ошибка при добавлении пользователя."
 
     else:
+        user = await UsersDAO.find_user(email=data.email)
+        
         await send_verification_email(
             email=data.email,
             title="Подтверждение почты.",
             text="Подтвердите вашу почту, перейдя по ссылке:",
             url_for_token="/auth/verify-email",
+            user_id=user.id
         )
         return redirect_message(url="/auth/verify-email")
     
@@ -140,7 +144,7 @@ async def delete_user(request: Request) -> RedirectResponse:
 
     token = request.cookies.get("users_access_token")
     try:
-        email = decode_access_token(token)
+        email = decode_access_token(token, for_email=True)
         result = await UsersDAO.delete_user(email=email)
         if not result:
             return redirect_message(
@@ -180,7 +184,7 @@ async def verify_email(request: Request) -> RedirectResponse:
     form = await request.form()
     token = dict(form).get("token")
     try:
-        email = decode_access_token(token)
+        email = decode_access_token(token, for_email=True)
         user = await UsersDAO.find_user(email=email)
         if not user:
             return redirect_message(
@@ -244,6 +248,7 @@ async def forgot_password_user(request: Request) -> RedirectResponse:
         title="Смена пароля.",
         text="Перейдите по ссылке, чтобы сменить пароль:",
         url_for_token="/auth/forgot_password/",
+        user_id=found.id
     )
 
     return redirect_message(
@@ -260,7 +265,7 @@ async def update_password_user(request: Request) -> RedirectResponse:
     form = await request.form()
     try:
         data = SUserUpdatePassword(**form)
-        email = decode_access_token(token=data.token)
+        email = decode_access_token(token=data.token, for_email=True)
         new_password = get_password_hash(password=data.password)
         await UsersDAO.update_user_password(email=email, password=new_password)
     

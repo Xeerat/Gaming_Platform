@@ -210,6 +210,7 @@ async def test_send_verification_email():
     text = "Hello"
     url = "/verify"
     fake_token = "abc123"
+    user_id = -1
     correct_link = f"http://localhost:8000{url}?token={fake_token}"
 
     with patch("app.users.auth.create_access_token", return_value=fake_token):
@@ -223,6 +224,7 @@ async def test_send_verification_email():
                 title=title,
                 text=text,
                 url_for_token=url,
+                user_id=user_id
             )
 
             # Assert
