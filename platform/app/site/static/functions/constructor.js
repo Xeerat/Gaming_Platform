@@ -497,7 +497,7 @@
                 </option>
             </select>
 
-            <label>NPC ID</label>
+            <label>Имя спрайта</label>
             <input value="${t.target}" onchange="updateTrigger('target', this.value)" />
 
             <label>Кнопка (если нужно)</label>
@@ -572,41 +572,38 @@
         if (!fileManager) return;
 
         try {
-            const mapsRes = await fetch('/maps/get_all_maps/', {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                credentials: 'include'
-            });
-
-            if (mapsRes.redirected || mapsRes.status === 0 || !mapsRes.ok) {
-                window.location.href = '/auth/login/';
-                return;
-            }
-
+            const mapsRes = await fetch('/maps/get_all_maps/', { credentials: 'include' });
+            if (!mapsRes.ok) return window.location.href = '/auth/login/';
             const maps = await mapsRes.json();
 
-            const spritesRes = await fetch('/sprites/get_all_sprites/', {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                credentials: 'include'
-            });
-
-            if (spritesRes.redirected || spritesRes.status === 0 || !spritesRes.ok) {
-                window.location.href = '/auth/login/';
-                return;
-            }
-
+            const spritesRes = await fetch('/sprites/get_all_sprites/', { credentials: 'include' });
+            if (!spritesRes.ok) return window.location.href = '/auth/login/';
             const sprites = await spritesRes.json();
+
+            //  Загружаем логику для каждого спрайта
+            const spritesWithLogic = await Promise.all(
+                sprites.map(async (sprite) => {
+                    try {
+                        const res = await fetch(`/sprites/get_sprite_logic/${sprite.sprite_name}/`, {
+                            credentials: 'include'
+                        });
+                        if (res.ok) {
+                            const blocks = await res.json();
+                            const main = blocks.find(b => b.name === 'main') || blocks[0];
+                            return { ...sprite, trigger_config: main?.trigger_config || [] };
+                        }
+                    } catch (e) { console.warn('Не загрузилась логика для', sprite.sprite_name, e); }
+                    return { ...sprite, trigger_config: [] };
+                })
+            );
 
             const allFiles = [
                 ...maps.map(m => ({ ...m, fileType: 'map' })),
-                ...sprites.map(s => ({ ...s, fileType: 'sprite' }))
+                ...spritesWithLogic.map(s => ({ ...s, fileType: 'sprite' }))
             ];
 
             renderFileList(fileManager, allFiles);
-
             setTimeout(setupDragAndDrop, 50);
-
         } catch (error) {
             window.location.href = '/auth/login/';
         }
@@ -621,6 +618,9 @@
     window.updateField = updateField;
     window.updateChoice = updateChoice;
     window.addTrigger = addTrigger;
+    window.saveTrigger = saveTrigger;
+    window.updateTrigger = updateTrigger;
+    window.updateAction = updateAction; 
 
     function renderFileList(container, files) {
         let filesContainer = container.querySelector('.files-container');
@@ -678,6 +678,9 @@
                 break;
 
             case 'sprite':
+                // Загружаем триггеры в память редактора
+                logicData.triggers = file.trigger_config || [];
+                selectedTriggerIndex = null; // сброс выделения
                 addSpriteToScene(file);
                 break;
 
@@ -686,6 +689,7 @@
                 break;
         }
     }
+    
 
     function addSpriteToScene(file) {
         const obj = {
@@ -1077,6 +1081,55 @@
             }
         }, 800);
     });
+
+
+
+    async function saveTrigger() {
+        if (selectedTriggerIndex === null) {
+            alert("Сначала выбери триггер из списка слева!");
+            return;
+        }
+
+        const currentTrigger = logicData.triggers[selectedTriggerIndex];
+
+        const spriteName = currentTrigger.target;
+
+        if (!spriteName) {
+            console.warn("Поле target пустое. Прерывание.");
+            alert("Введите имя спрайта в поле 'Имя спрайта' этого триггера!");
+            return;
+        }
+
+        // Бэкенд ждёт массив, поэтому оборачиваем один триггер в []
+        const payload = {
+            sprite_name: spriteName,
+            trigger_config: currentTrigger 
+        };
+    
+        try {
+            const response = await fetch("/sprites/update_sprite_logic/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload)
+            });
+
+            
+            // Читаем тело ответа (даже при ошибке 422 там будет детальное описание)
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert("Ошибка: " + (data.detail || "неизвестная"));
+                return;
+            }
+
+            alert("Триггер сохранён!");
+        } catch(e) {
+            alert("Ошибка сети");
+        }
+    }
+
+
     // -------------------------------
     // Переключение секций
     // -------------------------------
@@ -1123,7 +1176,7 @@
                 <div style="display:flex; height:100%;">
                     
                     <div style="width:300px; padding:10px;">
-                        <button onclick="Save()">Сохранение</button>
+                        <button class="button" onclick="saveTrigger()">Сохранение</button>
                         <button onclick="addTrigger()">+ Добавить триггер</button>
                         <div id="triggerList"></div>
                     </div>
