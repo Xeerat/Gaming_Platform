@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy import text, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 
@@ -72,7 +72,41 @@ class Sprite(Base):
         server_default=text("TIMEZONE('utc', now())")
     )
     owner: Mapped["User"] = relationship(back_populates="sprites")
+
+    sprite_logic: Mapped[list["SpriteLogic"]] = relationship(
+        back_populates="owner", 
+        cascade="all, delete-orphan",
+        lazy="selectin" 
+    )
+
     __table_args__ = (
         UniqueConstraint("user_id", "sprite_name", name="uq_user_sprite_name"),
     )
     extend_existing = True
+
+
+class SpriteLogic(Base):
+    """ORM-модель таблицы sprite_logic."""
+
+    __tablename__ = "sprite_logic"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    sprite_id: Mapped[int] = mapped_column(
+        ForeignKey("sprites.id", ondelete="CASCADE"), 
+        index=True
+    )
+    name: Mapped[str] = mapped_column(nullable=False)
+    trigger_config: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=True
+    )
+    dialog_config: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=True
+    )
+    dialog_role: Mapped[Optional[str]] = mapped_column(nullable=True)
+
+    owner:  Mapped["Sprite"] = relationship(back_populates="sprite_logic")
+
+    __table_args__ = (
+        UniqueConstraint("sprite_id", "name", name="uq_sprite_logic_name"),
+    )

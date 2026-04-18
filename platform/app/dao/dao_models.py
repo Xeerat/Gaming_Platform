@@ -3,10 +3,10 @@ from sqlalchemy.sql import ClauseElement
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import EmailStr
 
-from app.migration.models import User, Map, Sprite
+from app.migration.models import User, Map, Sprite, SpriteLogic
 from app.database import async_session_maker
 
-from typing import Generic, TypeVar, Type, List
+from typing import Generic, TypeVar, Type, List, Optional, Any, Dict
 
 
 T = TypeVar("T")
@@ -344,7 +344,7 @@ class SpriteDAO(BaseDAO[Sprite]):
         cls, 
         user_id: int, 
         sprite_name: str,
-        data: List[List[int]],
+        data: List[List[Dict[str, Any]]],
     ) -> None:
         """
         Добавляет спрайт в базу данных.
@@ -393,7 +393,7 @@ class SpriteDAO(BaseDAO[Sprite]):
         cls, 
         user_id: int, 
         sprite_name: str, 
-        new_data: List[List[int]],
+        new_data: List[List[Dict[str, Any]]],
     ) -> bool:
         """
         Обновляет спрайт в базе данных.
@@ -461,4 +461,147 @@ class SpriteDAO(BaseDAO[Sprite]):
 
         return await super()._find_all_data_where(
             cls.model.user_id == user_id
+        )
+    
+
+class SpriteLogicDAO(BaseDAO[SpriteLogic]):
+    """Класс взаимодействия с таблицей sprite_logic."""
+
+    model = SpriteLogic
+
+    @classmethod
+    async def add_sprite_logic(
+        cls,
+        sprite_id: int,
+        name: str,
+        trigger_config: Optional[dict[str, Any]] = None,
+        dialog_config: Optional[dict[str, Any]] = None,
+        dialog_role: Optional[str] = None
+    ) -> None:
+        """
+        Добавляет новый блок логики для спрайта в базу данных.
+
+        Args:
+            sprite_id: id спрайта, к которому привязывается логика.
+            name: название блока логики 
+            trigger_config: json конфигурации триггеров.
+            dialog_config: json конфигурации диалога.
+            dialog_role: роль спрайта в диалоге.
+
+        Raises:
+            IntegrityError - если добавляются данные, которые уже есть в базе.
+            SQLAlchemyError - если возникла ошибка при добавлении.
+            TypeError - если были переданы некорректные значения.
+        """
+        await super()._add_data(
+            sprite_id=sprite_id,
+            name=name,
+            trigger_config=trigger_config,
+            dialog_config=dialog_config,
+            dialog_role=dialog_role
+        )
+
+    @classmethod
+    async def update_sprite_logic(
+        cls,
+        logic_id: int,
+        trigger_config: Optional[dict[str, Any]] = None,
+        dialog_config: Optional[dict[str, Any]] = None,
+        dialog_role: Optional[str] = None
+    ) -> bool:
+        """
+        Обновляет существующий блок логики в базе данных.
+
+        Args:
+            logic_id: id конкретного блока логики для обновления.
+            trigger_config: новая json конфигурация триггеров.
+            dialog_config: новая json конфигурация диалога.
+            dialog_role: новая роль спрайта в диалоге.
+
+        Returns:
+            True - если была обновлена хотя бы одна строка. False - иначе.
+
+        Raises:
+            SQLAlchemyError - если возникла ошибка при обновлении.
+        """
+        values = {}
+        if trigger_config is not None:
+            values["trigger_config"] = trigger_config
+        if dialog_config is not None:
+            values["dialog_config"] = dialog_config
+        if dialog_role is not None:
+            values["dialog_role"] = dialog_role
+
+        if not values:
+            return False
+
+        return await super()._update_data_where(
+            cls.model.id == logic_id,
+            **values
+        )
+
+    @classmethod
+    async def find_sprite_logic_block(
+        cls,
+        sprite_id: int,
+        logic_block_name: str
+    ) -> SpriteLogic | None:
+        """
+        Находит блок логики для указанного спрайта.
+
+        Args:
+            sprite_id: id спрайта.
+            logic_block_name: название блока
+
+        Returns:
+            Объект блока логики или None, если блок не найден.
+
+        Raises:
+            SQLAlchemyError - если возникла ошибка при поиске.
+        """
+        return await super()._find_data_where(
+            cls.model.sprite_id == sprite_id,
+            cls.model.name == logic_block_name
+        )
+
+    @classmethod
+    async def find_all_sprite_logic_by_sprite(
+        cls,
+        sprite_id: int
+    ) -> List[SpriteLogic] | None:
+        """
+        Находит все блоки логики для указанного спрайта.
+
+        Args:
+            sprite_id: id спрайта.
+
+        Returns:
+            Список объектов блоков логики или None, если блоки не найдены.
+
+        Raises:
+            SQLAlchemyError - если возникла ошибка при поиске.
+        """
+        return await super()._find_all_data_where(
+            cls.model.sprite_id == sprite_id
+        )
+
+    @classmethod
+    async def delete_sprite_logic(
+        cls,
+        logic_id: int
+    ) -> bool:
+        """
+        Удаляет конкретный блок логики из базы данных.
+
+        Args:
+            logic_id: id блока логики для удаления.
+
+        Returns:
+            True - если получилось удалить блок логики, иначе False.
+
+        Raises:
+            SQLAlchemyError - если при удалении возникла ошибка.
+        """
+        return await super()._delete_data_where(
+            cls.model.id == logic_id,
         )
