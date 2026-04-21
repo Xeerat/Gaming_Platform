@@ -463,6 +463,146 @@ function resizePanels() {
     }
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+
+    document.getElementById("spriteLoader").addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = async function () {
+            const base64 = reader.result.split(",")[1];
+
+            robotSay("Удаляю фон ✂️");
+
+            const res = await fetch("/robot/remove-bg", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ image: base64 })
+            });
+
+            const data = await res.json();
+
+            if (!data.image) return;
+
+            const imgSrc = "data:image/png;base64," + data.image;
+
+            createSprite(imgSrc, 100, 100);
+        };
+
+        reader.readAsDataURL(file);
+    });
+
+});
+
+function robotAction(mode) {
+
+    if (mode === "remove_bg") {
+        robotSay("Загрузи изображение ✂️");
+        document.getElementById("spriteLoader").click();
+        return; 
+    }
+
+    let promptText = prompt("Опиши что нужно сгенерировать:");
+
+    if (!promptText) return;
+
+    if (mode === "character") {
+        robotSay("Генерирую персонажа 🎭");
+        generateAI(promptText, "character");
+    }
+
+    if (mode === "background") {
+        robotSay("Генерирую фон 🌄");
+        generateAI(promptText, "background");
+    }
+}
+
+// простой prompt UI
+function promptUser(text) {
+    return prompt(text);
+}
+
+// вызов FastAPI
+async function generateAI(prompt, mode) {
+    const res = await fetch("/robot/generate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ prompt, mode })
+    });
+
+    const data = await res.json();
+
+    if (!data.image) return;
+
+    const imgSrc = "data:image/png;base64," + data.image;
+
+    if (mode === "background") {
+        scene.style.background = `url(${imgSrc}) center/cover`;
+    } else {
+        createSprite(imgSrc, 100, 100);
+    }
+}
+
+document.addEventListener("mousemove", e => {
+    document.querySelectorAll(".pupil").forEach(pupil => {
+        const rect = pupil.parentElement.getBoundingClientRect();
+
+        const dx = e.clientX - (rect.left + rect.width / 2);
+        const dy = e.clientY - (rect.top + rect.height / 2);
+
+        const angle = Math.atan2(dy, dx);
+        const radius = 3;
+
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+
+        pupil.style.transform = `translate(${x}px, ${y}px)`;
+    });
+});
+
+setInterval(() => {
+    document.querySelectorAll(".eye").forEach(eye => {
+        eye.classList.add("blink");
+        setTimeout(() => eye.classList.remove("blink"), 200);
+    });
+}, 3000 + Math.random() * 2000);
+
+document.getElementById("robotAssistant").onclick = () => {
+    const mouth = document.querySelector(".mouth");
+    mouth.style.height = "12px";
+
+    setTimeout(() => {
+        mouth.style.height = "6px";
+    }, 300);
+};
+
+const robot = document.getElementById("robotAssistant");
+const bubble = document.getElementById("robotBubble");
+
+function robotSay(text, duration = 2000) {
+    bubble.innerText = text;
+    robot.classList.add("showBubble");
+
+    setTimeout(() => {
+        robot.classList.remove("showBubble");
+    }, duration);
+}
+
+function robotThinking(text = "Думаю") {
+    bubble.innerText = text;
+    bubble.classList.add("loadingDots");
+    robot.classList.add("showBubble");
+    robot.classList.add("thinking");
+}
+
+function robotDone(text = "Готово!") {
+    bubble.classList.remove("loadingDots");
+    robot.classList.remove("thinking");
+    robotSay(text, 1500);
+}
+
 window.addEventListener("resize", resizePanels);
 resizePanels();
 

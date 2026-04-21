@@ -23,6 +23,7 @@
     <h3>Музыка</h3>
     <input type="file" id="audioLoader" accept="audio/*">
     <button onclick="addAudio()">Добавить аудио</button>
+
 </div>
 
 <!-- СЦЕНА -->
@@ -60,6 +61,23 @@
 <div id="logic">
     <canvas id="logicCanvas"></canvas>
     <button id="closeLogicBtn" style="position:absolute;top:10px;right:10px;z-index:10;padding:5px 10px;">Выйти</button>
+</div>
+
+<div id="robotAssistant">
+    <div class="robot-head">
+        <div class="eye left"><div class="pupil"></div></div>
+        <div class="eye right"><div class="pupil"></div></div>
+        <div class="mouth"></div>
+    </div>
+
+    <div class="robot-body"></div>
+    <div id="robotBubble">Привет! Я могу помочь 🎨</div>
+
+    <div class="robot-menu">
+        <button onclick="robotAction('character')">🎭</button>
+        <button onclick="robotAction('background')">🌄</button>
+        <button onclick="robotAction('remove_bg')">✂️</button>
+    </div>
 </div>
 
 <script>

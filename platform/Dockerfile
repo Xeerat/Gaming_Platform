@@ -2,11 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /platform
 
+ENV HF_HUB_DISABLE_XET=1
+
 # Системные зависимости
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
+
+RUN python -m pip install --upgrade pip setuptools wheel
 
 # Копирование зависимостей
 COPY requirements.txt .
