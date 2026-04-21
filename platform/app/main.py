@@ -4,12 +4,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.users.router import router as router_users
+from app.ai.router import router as router_ai
 
 from typing import Optional
 
 
 app = FastAPI()
 app.include_router(router_users)
+app.include_router(router_ai)
 
 app.mount('/static', StaticFiles(directory="app/site/static"), name="static")
 templates = Jinja2Templates(directory="app/site/templates")
