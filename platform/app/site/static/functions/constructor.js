@@ -42,6 +42,7 @@
     let nodes = [];
     let selectedNodeId = null;
     const fileDataStore = new Map();
+    let selectedSpriteType = 'NPC';
 
     function addNode() {
         const id = Date.now().toString();
@@ -295,6 +296,7 @@
 
         const payload = {
             sprite_name: spriteName,
+            sprite_type: selectedSpriteType,
             data: matrix
         };
 
@@ -398,6 +400,33 @@
             saveBtn.textContent = "Сохранить";
             saveBtn.addEventListener('click', saveSprite);
             container.appendChild(saveBtn);
+
+            const typeWrapper = document.createElement('div');
+            typeWrapper.style.cssText = 'margin-top: 10px; display: flex; align-items: center; gap: 8px;';
+
+            const typeLabel = document.createElement('label');
+            typeLabel.textContent = 'Тип:';
+            typeLabel.style.fontSize = '14px';
+
+            const typeSelect = document.createElement('select');
+            typeSelect.innerHTML = `
+                <option value="NPC" ${selectedSpriteType === 'NPC' ? 'selected' : ''}>NPC</option>
+                <option value="Player" ${selectedSpriteType === 'Player' ? 'selected' : ''}>Player</option>
+                <option value="Object" ${selectedSpriteType === 'Object' ? 'selected' : ''}>Object</option>
+            `;
+            typeSelect.style.padding = '4px 8px';
+            typeSelect.style.borderRadius = '4px';
+            typeSelect.style.border = '1px solid #555';
+            typeSelect.style.background = '#222';
+            typeSelect.style.color = '#fff';
+
+            typeSelect.addEventListener('change', (e) => {
+                selectedSpriteType = e.target.value;
+            });
+
+            typeWrapper.appendChild(typeLabel);
+            typeWrapper.appendChild(typeSelect);
+            container.appendChild(typeWrapper);
         }
     }
 
@@ -986,11 +1015,19 @@
         }
     }
 
+    let isDragDropSetup = false;
+
     function setupDragAndDrop() {
+        if (isDragDropSetup) return;
+        isDragDropSetup = true;
+
         const trash = document.getElementById('trashZone');
         const container = document.querySelector('#fileManager .files-container');
         
-        if (!trash || !container) return;
+        if (!trash || !container) {
+            isDragDropSetup = false;
+            return;
+        }
 
         container.onmousedown = (e) => {
             const card = e.target.closest('.file-card[draggable="true"]');
