@@ -33,6 +33,7 @@ async def add_character(
         await SpriteDAO.add_sprite(
             user_id=user_id,
             sprite_name=sprite.sprite_name,
+            sprite_type=sprite.sprite_type,
             data=sprite.data
         )
 

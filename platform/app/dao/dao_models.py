@@ -344,6 +344,7 @@ class SpriteDAO(BaseDAO[Sprite]):
         cls, 
         user_id: int, 
         sprite_name: str,
+        sprite_type: str,
         data: List[List[Dict[str, Any]]],
     ) -> None:
         """
@@ -363,6 +364,7 @@ class SpriteDAO(BaseDAO[Sprite]):
         await super()._add_data(
             user_id=user_id,
             sprite_name=sprite_name,
+            sprite_type=sprite_type,
             data=data
         )
 
@@ -392,7 +394,7 @@ class SpriteDAO(BaseDAO[Sprite]):
     async def update_sprite(
         cls, 
         user_id: int, 
-        sprite_name: str, 
+        sprite_name: str,
         new_data: List[List[Dict[str, Any]]],
     ) -> bool:
         """

@@ -67,6 +67,7 @@ class Sprite(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     sprite_name: Mapped[str] = mapped_column()
+    sprite_type: Mapped[str] = mapped_column()
     data: Mapped[List[List[Dict[str, Any]]]] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         server_default=text("TIMEZONE('utc', now())")

@@ -7,6 +7,7 @@ class SCharSave(BaseModel):
     """Модель для сохранения спрайта через JSON."""
     
     sprite_name: str
+    sprite_type: str
     data: List[List[Dict[str, Any]]]
 
 
