@@ -3,6 +3,8 @@ from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
+import shutil
+from pathlib import Path
 
 from app.dao.dao_models import UsersDAO
 from app.users.validation import SUserRegister, SUserAuth, SUserForgotPassword
@@ -140,41 +142,58 @@ async def logout_user() -> RedirectResponse:
 
 @router.post("/del/")
 async def delete_user(request: Request) -> RedirectResponse:
-    """Удаляет аккаунт пользователя с платформы."""
+    """Удаляет аккаунт пользователя и все его файлы."""
+
+    UPLOAD_DIR = Path("uploads/novels")
 
     token = request.cookies.get("users_access_token")
+    if not token:
+        return redirect_message(
+            url="/auth/login/",
+            message="Пользователь не авторизован.",
+            error=True,
+        )
+
     try:
-        email = decode_access_token(token, for_email=True)
-        result = await UsersDAO.delete_user(email=email)
+        user_id = decode_access_token(token)
+        user_email = decode_access_token(token=token, for_email=True)
+    except (ExpiredSignatureError, JWTError):
+        return redirect_message(
+            url="/auth/login/",
+            message="Ошибка авторизации.",
+            error=True,
+        )
+
+    # Удаляем папку пользователя с файлами (если существует)
+    user_folder = UPLOAD_DIR / str(user_id)
+    if user_folder.exists():
+        shutil.rmtree(user_folder)
+
+    # Удаляем пользователя из БД (каскадно удалятся его новеллы)
+    try:
+        result = await UsersDAO.delete_user(user_email)
         if not result:
             return redirect_message(
                 url="/auth/login/",
-                message="Такой пользователь не зарегистрирован.",
+                message="Пользователь не зарегистрирован.",
                 error=True,
             )
-
-    except ExpiredSignatureError:
-        message = "Истек срок годности токена."
-        url = "/main/"
-
-    except JWTError:
-        message = "Пользователь не авторизован."
-        url = "/auth/login/"
-
-    except SQLAlchemyError:
-        message = "Возникла ошибка при удалении пользователя."
-        url = "/main/"
-
-    else:
-        response = redirect_message(
-            url="/auth/login/",
-            message="Удаление прошло успешно!", 
-            success=True,
+    except SQLAlchemyError as e:
+        # если ошибка, но папка уже удалена – всё равно логируем
+        print(f"DB error while deleting user {user_id}: {e}")
+        return redirect_message(
+            url="/main/",
+            message="Ошибка при удалении пользователя.",
+            error=True,
         )
-        response.delete_cookie(key="users_access_token")
-        return response
-    
-    return redirect_message(url=url, message=message, error=True)
+
+    response = redirect_message(
+        url="/auth/login/",
+        message="Удаление прошло успешно!",
+        success=True,
+    )
+    response.delete_cookie(key="users_access_token")
+    return response
     
 
 @router.post("/verify-email")

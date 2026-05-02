@@ -4,7 +4,53 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Главная страница</title>
-  <link rel="stylesheet" href="\static\style_mainPage.css">
+  <link rel="stylesheet" href="/static/style_mainPage.css">
+  <style>
+    .novels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .novel-card {
+      background: rgba(0,0,0,0.6);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+    }
+    .preview {
+      height: 150px;
+      background-size: cover;
+      background-position: center;
+      border-radius: 8px;
+      background-color: #2a1a4a;
+    }
+    .title {
+      margin: 10px 0;
+      font-weight: bold;
+      color: white;
+    }
+    .play-btn {
+      background: var(--btn-gradient);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 20px;
+      color: white;
+      cursor: pointer;
+    }
+    .pagination {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .empty-message {
+      text-align: center;
+      padding: 40px;
+      font-size: 18px;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
 
@@ -14,7 +60,6 @@
     {{ success }}
   </div>
   {% endif %}
-
   {% if error %}
   <div class="notification error">
     <button class="close-btn" onclick="this.parentElement.remove()">×</button>
@@ -23,13 +68,18 @@
   {% endif %}
 
   <div class="content">
-    <!-- Здесь будет основной контент страницы -->
+    <div id="novelsGrid" class="novels-grid"></div>
+    <div class="pagination">
+      <button id="prevPageBtn" disabled>←</button>
+      <span id="pageInfo">Страница 1</span>
+      <button id="nextPageBtn">→</button>
+    </div>
   </div>
 
   <div class="sidebar">
     <form id="deleteForm" action="/auth/del/" method="post"></form>
     <button type="button" onclick="confirmDelete()">Удалить аккаунт</button>
-    
+
     <form id="constructor" action="/main/constructor" method="get"></form>
     <button type="button" onclick="confirmConstructor()">Конструктор</button>
 
@@ -38,6 +88,67 @@
   </div>
 
 <script>
+let currentPage = 0;
+const limit = 15;
+
+async function loadNovels() {
+    const skip = currentPage * limit;
+    try {
+        const response = await fetch(`/novels/public/?skip=${skip}&limit=${limit}`);
+        if (!response.ok) throw new Error('Ошибка загрузки');
+        const data = await response.json();
+        const grid = document.getElementById('novelsGrid');
+        grid.innerHTML = '';
+        if (data.items.length === 0 && currentPage === 0) {
+            grid.innerHTML = '<div class="empty-message">Пока нет новелл. Создайте свою!</div>';
+        } else {
+            for (let n of data.items) {
+                const card = document.createElement('div');
+                card.className = 'novel-card';
+                const previewUrl = n.preview ? n.preview : '/static/default_preview.png';
+                card.innerHTML = `
+                    <div class="preview" style="background-image: url('${previewUrl}');"></div>
+                    <div class="title">${escapeHtml(n.title)}</div>
+                    <button class="play-btn" onclick="startGame(${n.id})">▶ Играть</button>
+                `;
+                grid.appendChild(card);
+            }
+        }
+        // Обновляем состояние кнопок пагинации
+        document.getElementById('prevPageBtn').disabled = currentPage === 0;
+        document.getElementById('nextPageBtn').disabled = data.items.length < limit;
+        document.getElementById('pageInfo').innerText = `Страница ${currentPage + 1}`;
+    } catch (err) {
+        console.error(err);
+        document.getElementById('novelsGrid').innerHTML = '<div class="empty-message">Не удалось загрузить новеллы</div>';
+    }
+}
+
+function startGame(id) {
+    window.location.href = `/novels/game/${id}`;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+document.getElementById('prevPageBtn').onclick = () => {
+    if (currentPage > 0) {
+        currentPage--;
+        loadNovels();
+    }
+};
+document.getElementById('nextPageBtn').onclick = () => {
+    currentPage++;
+    loadNovels();
+};
+
 function confirmLogout() {
     if (confirm("Вы уверены, что хотите выйти?")) {
         window.location.href = "/auth/logout/";
@@ -55,6 +166,8 @@ function confirmConstructor() {
         document.getElementById('constructor').submit();
     }
 }
+
+loadNovels();
 </script>
 
 </body>

@@ -441,54 +441,42 @@ async def test_logout_user_success():
 @pytest.mark.asyncio
 async def test_delete_user_success():
     """Успешное удаление пользователя."""
-
-    # Arrange
     request = AsyncMock()
     request.cookies = {"users_access_token": "valid_token"}
 
-    decode_token_path = "app.users.router.decode_access_token"
-    delete_user_path = "app.users.router.UsersDAO.delete_user"
-    redirect_message_path = "app.users.router.redirect_message"
+    with patch("app.users.router.decode_access_token") as mock_decode, \
+         patch("app.users.router.UsersDAO.delete_user",
+                new_callable=AsyncMock) as mock_delete, \
+         patch("app.users.router.shutil.rmtree") as mock_rmtree, \
+         patch("app.users.router.redirect_message") as mock_redirect, \
+         patch("pathlib.Path.exists", return_value=True):
 
-    with patch(redirect_message_path) as mock_redirect, \
-         patch(
-            decode_token_path, 
-            return_value="test@test.com"
-         ) as mock_decode, \
-         patch(
-            delete_user_path, 
-            new_callable=AsyncMock, 
-            return_value=True
-        ) as mock_delete:
-
+        mock_decode.side_effect = [123, "test@test.com"]
+        mock_delete.return_value = True
         mock_response = AsyncMock()
         mock_redirect.return_value = mock_response
 
-        # Act
         response = await users_router.delete_user(request)
 
-        # Assert
-        mock_decode.assert_called_once_with("valid_token", for_email=True)
-        mock_delete.assert_awaited_once_with(email="test@test.com")
-
+        assert mock_decode.call_count == 2
+        mock_decode.assert_any_call("valid_token")
+        mock_decode.assert_any_call(token="valid_token", for_email=True)
+        mock_rmtree.assert_called_once()
+        mock_delete.assert_awaited_once_with("test@test.com")
         mock_redirect.assert_called_once_with(
             url="/auth/login/",
             message="Удаление прошло успешно!",
             success=True,
         )
-
         mock_response.delete_cookie.assert_called_once_with(
             key="users_access_token"
         )
-
         assert response == mock_response
 
 
 @pytest.mark.asyncio
 async def test_delete_user_not_found():
     """Пользователь не найден при удалении."""
-
-    # Arrange
     request = AsyncMock()
     request.cookies.get.return_value = "valid_token"
 
@@ -500,13 +488,11 @@ async def test_delete_user_not_found():
          patch(delete_user_path, new_callable=AsyncMock, return_value=False), \
          patch(redirect_message_path) as mock_redirect:
 
-        # Act
         await users_router.delete_user(request)
 
-        # Assert
         mock_redirect.assert_called_once_with(
             url="/auth/login/",
-            message="Такой пользователь не зарегистрирован.",
+            message="Пользователь не зарегистрирован.",
             error=True,
         )
 
@@ -514,8 +500,6 @@ async def test_delete_user_not_found():
 @pytest.mark.asyncio
 async def test_delete_user_expired_token():
     """Истёк срок действия токена."""
-
-    # Arrange
     request = AsyncMock()
     request.cookies.get.return_value = "expired_token"
 
@@ -525,13 +509,11 @@ async def test_delete_user_expired_token():
     with patch(decode_token_path, side_effect=ExpiredSignatureError()), \
          patch(redirect_message_path) as mock_redirect:
 
-        # Act
         await users_router.delete_user(request)
 
-        # Assert
         mock_redirect.assert_called_once_with(
-            url="/main/",
-            message="Истек срок годности токена.",
+            url="/auth/login/",
+            message="Ошибка авторизации.",
             error=True,
         )
 
@@ -539,8 +521,6 @@ async def test_delete_user_expired_token():
 @pytest.mark.asyncio
 async def test_delete_user_invalid_token():
     """Пользователь не авторизован (битый токен)."""
-
-    # Arrange
     request = AsyncMock()
     request.cookies.get.return_value = "bad_token"
 
@@ -550,13 +530,11 @@ async def test_delete_user_invalid_token():
     with patch(decode_token_path, side_effect=JWTError()), \
          patch(redirect_message_path) as mock_redirect:
 
-        # Act
         await users_router.delete_user(request)
 
-        # Assert
         mock_redirect.assert_called_once_with(
             url="/auth/login/",
-            message="Пользователь не авторизован.",
+            message="Ошибка авторизации.",
             error=True,
         )
 
@@ -564,8 +542,6 @@ async def test_delete_user_invalid_token():
 @pytest.mark.asyncio
 async def test_delete_user_db_error():
     """Ошибка базы данных при удалении."""
-
-    # Arrange
     request = AsyncMock()
     request.cookies.get.return_value = "valid_token"
 
@@ -576,18 +552,15 @@ async def test_delete_user_db_error():
     with patch(decode_token_path, return_value="test@test.com"), \
          patch(redirect_message_path) as mock_redirect, \
          patch(
-            delete_user_path, 
-            new_callable=AsyncMock, 
-            side_effect=SQLAlchemyError()
-         ):
+             delete_user_path, 
+             new_callable=AsyncMock, 
+             side_effect=SQLAlchemyError()):
 
-        # Act
         await users_router.delete_user(request)
 
-        # Assert
         mock_redirect.assert_called_once_with(
             url="/main/",
-            message="Возникла ошибка при удалении пользователя.",
+            message="Ошибка при удалении пользователя.",
             error=True,
         )
 
