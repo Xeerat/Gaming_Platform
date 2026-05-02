@@ -24,6 +24,9 @@
     <input type="file" id="audioLoader" accept="audio/*">
     <button onclick="addAudio()">Добавить аудио</button>
 
+    <button onclick="document.getElementById('previewLoader').click()">🖼️ Загрузить превью</button>
+    <input type="file" id="previewLoader" accept="image/*" style="display:none">
+
 </div>
 
 <!-- СЦЕНА -->
@@ -45,6 +48,9 @@
 
     <hr>
 
+    <h3>Название проекта</h3>
+<input type="text" id="novelTitle" placeholder="Название новеллы" value="Моя новелла">
+
     <h3>Диалог</h3>
     <div>Имя <input id="charName"></div>
     <div>Текст <input id="dialogText"></div>
@@ -53,6 +59,7 @@
     <br>
     
     <button onclick="playDialog()">▶ Играть</button>
+    <button onclick="saveProject()">💾 Сохранить</button>
     <button onclick="stopAudio()">■ Остановить музыку</button>
     <button onclick="confirmLogout()">Выход</button>
 </div>

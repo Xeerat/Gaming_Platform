@@ -2,9 +2,14 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
 from app.users.router import router as router_users
 from app.ai.router import router as router_ai
+from app.constructor.novell_router import router as router_novel
+from app.constructor.upload_router import router as router_upload
+from app.constructor.cleenup import cleanup_orphan_files
 
 from typing import Optional
 
@@ -12,10 +17,23 @@ from typing import Optional
 app = FastAPI()
 app.include_router(router_users)
 app.include_router(router_ai)
+app.include_router(router_novel)
+app.include_router(router_upload)
 
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.mount('/static', StaticFiles(directory="app/site/static"), name="static")
 templates = Jinja2Templates(directory="app/site/templates")
 
+
+scheduler = AsyncIOScheduler()
+scheduler.add_job(cleanup_orphan_files, IntervalTrigger(hours=24))
+scheduler.start()
+
+
+@app.on_event("shutdown")
+def shutdown_scheduler():
+    scheduler.shutdown()
+    
 
 @app.get("/auth/register/", response_class=HTMLResponse)
 def load_page_register(request: Request, error: Optional[str] = None):

@@ -1,12 +1,12 @@
-from sqlalchemy import select, update, delete, insert
+from sqlalchemy import select, update, delete, insert, func
 from sqlalchemy.sql import ClauseElement
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import EmailStr
 
-from app.migration.models import User
+from app.migration.models import User, Novell
 from app.database import async_session_maker
 
-from typing import Generic, TypeVar, Type
+from typing import Generic, TypeVar, Type, Dict, Any, Optional
 
 
 T = TypeVar("T")
@@ -208,3 +208,55 @@ class UsersDAO(BaseDAO[User]):
             cls.model.email == email, 
             password=password
         )
+
+class NovelsDAO(BaseDAO[Novell]):
+    model = Novell
+
+    @classmethod
+    async def add_novel(
+        cls,
+        user_id: int,
+        title: str,
+        data: Dict[str, Any],
+        preview: Optional[str] = None
+    ) -> None:
+        """
+        Сохраняет новеллу  в базу данных.
+
+        Args:
+            user_id: идентификатор пользователя.
+            title: название проекта.
+            data: JSON-объект с полным состоянием проекта.
+
+        Raises:
+            IntegrityError: если нарушены ограничения (например, неверный user_id).
+            SQLAlchemyError: при ошибке БД.
+        """
+
+        await super()._add_data(
+            user_id=user_id,
+            title=title,
+            data=data,
+            preview=preview
+        )
+
+    @classmethod
+    async def find_by_id(cls, novel_id: int) -> Optional["Novell"]:
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(cls.model).where(cls.model.id == novel_id)
+            )
+            return result.scalar_one_or_none()
+        
+    @classmethod
+    async def find_paginated_all(cls, skip: int, limit: int) -> tuple[list["Novell"], int]:
+        async with async_session_maker() as session:
+            # Запрос всех новелл (можно сортировать по дате)
+            query = select(cls.model).order_by(cls.model.created_at.desc()).offset(skip).limit(limit)
+            result = await session.execute(query)
+            novels = result.scalars().all()
+            # Общее количество всех новелл
+            total_query = select(func.count()).select_from(cls.model)
+            total = await session.execute(total_query)
+            total_count = total.scalar()
+            return novels, total_count

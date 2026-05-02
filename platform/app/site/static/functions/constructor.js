@@ -29,11 +29,28 @@ function playAudio(src) {
 
 let audioFile = null;
 
-audioLoader.onchange = e => {
-    if(e.target.files[0]) {
-        audioFile = URL.createObjectURL(e.target.files[0]);
+// audioLoader.onchange = e => {
+//     if(e.target.files[0]) {
+//         audioFile = URL.createObjectURL(e.target.files[0]);
+//     }
+// };
+
+function addSprite() {
+    document.getElementById("spriteLoader").click();
+}
+
+function setBackground() {
+    document.getElementById("bgLoader").click();
+}
+
+// Музыка
+audioLoader.onchange = async (e) => {
+    if (e.target.files[0]) {
+        const url = await uploadFile(e.target.files[0]);
+        if (url) audioFile = url;
     }
 };
+
 
 const scene = document.getElementById("scene");
 let selectedSprite = null;
@@ -115,16 +132,38 @@ scene.addEventListener("mousedown", e => {
 });
 
 let spriteImage = null;
-spriteLoader.onchange = e => { if(e.target.files[0]) spriteImage = URL.createObjectURL(e.target.files[0]); };
-function addSprite() { if(!spriteImage) return; createSprite(spriteImage,100,100); }
+// spriteLoader.onchange = e => { if(e.target.files[0]) spriteImage = URL.createObjectURL(e.target.files[0]); };
+// function addSprite() { if(!spriteImage) return; createSprite(spriteImage,100,100); }
+spriteLoader.onchange = async (e) => {
+    if (e.target.files[0]) {
+        const url = await uploadFile(e.target.files[0]);
+        if (url) createSprite(url, 100, 100);
+    }
+};
+
+
+
 
 let bgImage = null;
-bgLoader.onchange = e => { if(e.target.files[0]) bgImage = URL.createObjectURL(e.target.files[0]); };
-function setBackground() {
-    if (!bgImage) return;
-    scene.style.background = `url(${bgImage}) no-repeat center center`;
-    scene.style.backgroundSize = "100% 100%"; // всегда растягиваем на весь экран
-}
+// bgLoader.onchange = e => { if(e.target.files[0]) bgImage = URL.createObjectURL(e.target.files[0]); };
+// function setBackground() {
+//     if (!bgImage) return;
+//     scene.style.background = `url(${bgImage}) no-repeat center center`;
+//     scene.style.backgroundSize = "100% 100%"; // всегда растягиваем на весь экран
+// }
+
+bgLoader.onchange = async (e) => {
+    if (e.target.files[0]) {
+        const url = await uploadFile(e.target.files[0]);
+        if (url) {
+            bgImage = url;
+            scene.style.background = `url(${bgImage}) no-repeat center center`;
+            scene.style.backgroundSize = "100% 100%";
+        }
+    }
+};
+
+
 
 // -------------------
 // ЛОГИКА
@@ -463,17 +502,16 @@ function resizePanels() {
     }
 }
 
+
 document.addEventListener("DOMContentLoaded", () => {
 
-    document.getElementById("spriteLoader").addEventListener("change", async (e) => {
+        document.getElementById("spriteLoader").addEventListener("change", async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-
         reader.onload = async function () {
             const base64 = reader.result.split(",")[1];
-
             robotSay("Удаляю фон ✂️");
 
             const res = await fetch("/robot/remove-bg", {
@@ -483,14 +521,11 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const data = await res.json();
-
             if (!data.image) return;
 
-            const imgSrc = "data:image/png;base64," + data.image;
-
-            createSprite(imgSrc, 100, 100);
+            const url = await uploadBase64(data.image, "removed_bg.png");
+            if (url) createSprite(url, 100, 100);
         };
-
         reader.readAsDataURL(file);
     });
 
@@ -536,12 +571,16 @@ async function generateAI(prompt, mode) {
 
     if (!data.image) return;
 
-    const imgSrc = "data:image/png;base64," + data.image;
+    // Загружаем сгенерированное изображение на сервер
+    const url = await uploadBase64(data.image, `${mode}_${Date.now()}.png`);
+    if (!url) return;
 
     if (mode === "background") {
-        scene.style.background = `url(${imgSrc}) center/cover`;
+        bgImage = url;
+        scene.style.background = `url(${bgImage}) center/cover`;
+        scene.style.backgroundSize = "100% 100%";
     } else {
-        createSprite(imgSrc, 100, 100);
+        createSprite(url, 100, 100);
     }
 }
 
@@ -607,3 +646,155 @@ window.addEventListener("resize", resizePanels);
 resizePanels();
 
 setInterval(draw,30);
+
+
+
+// загрузка файла на сервер и получение постоянного URL
+async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/upload/file/", {
+        method: "POST",
+        credentials: "include",
+        body: formData
+    });
+    if (response.redirected) {
+        window.location.href = response.url;
+        return null;
+    }
+    if (!response.ok) {
+        const err = await response.json();
+        alert("Ошибка загрузки: " + (err.detail || "Неизвестная"));
+        return null;
+    }
+    const data = await response.json();
+    return data.url;
+}
+
+async function uploadBase64(base64Data, filename = "image.png") {
+    // Если передана строка с префиксом "data:image/...;base64,", отрезаем его
+    let rawBase64 = base64Data;
+    if (base64Data.includes(',')) {
+        rawBase64 = base64Data.split(',')[1];
+    }
+    const byteCharacters = atob(rawBase64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: "image/png" });
+    const file = new File([blob], filename, { type: "image/png" });
+    return await uploadFile(file);
+}
+
+
+
+// ---------- СОХРАНЕНИЕ ПРОЕКТА НА БЭКЕНД ----------
+async function saveProject() {
+    const titleInput = document.getElementById("novelTitle");
+    const title = titleInput ? titleInput.value.trim() : "Без названия";
+    if (!title) {
+        alert("Введите название новеллы");
+        return;
+    }
+
+    // 1. Собираем диалоги (без DOM-ссылок)
+    const dialogData = userDialog.map(dialog => ({
+        id: dialog.id,
+        name: dialog.name,
+        text: dialog.text,
+        options: dialog.options,
+        bg: dialog.bg,
+        sprites: dialog.sprites.map(s => ({
+            src: s.src,                 // ссылка на спрайт (Blob URL, при загрузке не восстановится)
+            x: s.x,
+            y: s.y,
+            scale: s.scale
+        })),
+        audio: dialog.audio || null
+    }));
+
+    // 2. Собираем позиции блоков из визуального редактора логики
+    const blocksData = blocks.map(block => ({
+        blockId: block.blockId,
+        x: block.x,
+        y: block.y
+    }));
+
+    // 3. Собираем текущие спрайты на сцене (только позиции и масштаб, src для восстановления)
+    const sceneSpritesData = sprites.map(sprite => ({
+        src: sprite.el.src,
+        x: sprite.x,
+        y: sprite.y,
+        scale: sprite.scale
+    }));
+
+    // 4. Фон и музыка
+    const hasBackground = !!bgImage;
+    const hasAudio = !!audioFile;
+
+    // 5. Связи (опционально, можно восстановить из options, но сохраним для удобства)
+    const connectionsData = connections.map(conn => ({
+        fromId: conn.from.blockId,
+        toId: conn.to.blockId
+    }));
+
+    const sceneRect = scene.getBoundingClientRect();
+    
+    const projectState = {
+        dialogData,
+        blocksData,
+        sceneSpritesData,
+        currentBg: bgImage || null,      // URL текущего фона сцены
+        currentAudio: audioFile || null, // URL текущей музыки сцены
+        sceneWidth: sceneRect.width,
+        sceneHeight: sceneRect.height,
+        connectionsData
+    };
+
+    // Отправляем POST-запрос
+    try {
+        const response = await fetch("/novels/add_novel/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include",   // чтобы куки с токеном отправились
+            body: JSON.stringify({
+                title: title,
+                data: projectState,
+                preview: currentPreview || null
+            })
+        });
+
+        if (response.redirected) {
+            // Сервер вернул редирект (например, на страницу логина)
+            window.location.href = response.url;
+            return;
+        }
+
+        if (response.ok) {
+            const result = await response.json();
+            alert(`Проект "${title}" сохранён! ID: ${result.id}`);
+        } else {
+            const errorData = await response.json();
+            alert(`Ошибка сохранения: ${errorData.detail || "Неизвестная ошибка"}`);
+        }
+    } catch (err) {
+        console.error("Save error:", err);
+        alert("Не удалось сохранить проект. Проверьте соединение с сервером.");
+    }
+}
+
+
+// Загрузка превью из отдельного файла
+previewLoader.onchange = async (e) => {
+    if (e.target.files[0]) {
+        const url = await uploadFile(e.target.files[0]);
+        if (url) {
+            currentPreview = url;
+            alert("Превью загружено! Не забудьте сохранить проект.");
+        }
+    }
+};
