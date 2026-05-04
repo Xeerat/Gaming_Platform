@@ -81,7 +81,7 @@
         nodes.forEach(n => {
             const div = document.createElement("div");
             div.className = "card";
-            div.innerText = (n.text || "Новая реплика").slice(0, 30);
+            div.innerText = (n.dialogName || "Новый диалог").slice(0, 30);
             div.onclick = () => selectNode(n.id);
             list.appendChild(div);
         });
@@ -98,40 +98,48 @@
         card.className = "card";
 
         card.innerHTML = `
-            <label>Кто говорит:</label>
-            <select onchange="updateField('speaker', this.value)">
-                <option ${node.speaker==='NPC'?'selected':''}>NPC</option>
-                <option ${node.speaker==='Player'?'selected':''}>Player</option>
-            </select>
+            <label>Название диалога:</label>
+            <input value="${node.dialogName || ''}" 
+                onchange="updateField('dialogName', this.value)" />
 
-            <label>ID:</label>
-            <input value="${node.id}" readonly />
+            <label>Имя главного персонажа:</label>
+            <input value="${node.playerName || ''}" 
+                onchange="updateField('playerName', this.value)" />
 
-            <label>Имя:</label>
-            <input value="${node.name}" onchange="updateField('name', this.value)"/>
+            <label>Имя NPC:</label>
+            <input value="${node.npcName || ''}" 
+                onchange="updateField('npcName', this.value)" />
 
-            <label>Текст:</label>
-            <textarea onchange="updateField('text', this.value)">${node.text}</textarea>
+            <label>Текст NPC:</label>
+            <textarea onchange="updateField('npcText', this.value)">
+    ${node.npcText || ''}
+            </textarea>
 
-            <button class="button" onclick="addChoiceToCurrent()">Добавить вариант</button>
+            <label>Текст игрока:</label>
+            <textarea onchange="updateField('playerText', this.value)">
+    ${node.playerText || ''}
+            </textarea>
+
+            <button class="button" onclick="addChoiceToCurrent()">
+                Добавить вариант
+            </button>
         `;
 
-        node.choices.forEach((c, i) => {
+        (node.dialogFlow || []).forEach((c, i) => {
             const div = document.createElement("div");
             div.className = "choice";
 
             div.innerHTML = `
-                <input placeholder="Ответ игрока" value="${c.text}" 
-                    onchange="updateChoice(${i}, 'text', this.value)" />
-
-                <select onchange="updateChoice(${i}, 'next', this.value)">
-                    <option value="">-- конец --</option>
-                    ${nodes.map(n => `
-                        <option value="${n.id}" ${c.next===n.id?'selected':''}>
-                            ${n.text.slice(0,20) || "реплика"}
-                        </option>
-                    `).join("")}
+                <label>Кто говорит:</label>
+                <select onchange="updateFlow(${i}, 'speaker', this.value)">
+                    <option value="npc" ${c.speaker==='npc'?'selected':''}>NPC</option>
+                    <option value="player" ${c.speaker==='player'?'selected':''}>Игрок</option>
                 </select>
+
+                <label>Текст:</label>
+                <input value="${c.text}" 
+                    placeholder="Реплика"
+                    onchange="updateFlow(${i}, 'text', this.value)" />
             `;
 
             card.appendChild(div);
@@ -140,20 +148,45 @@
         editor.appendChild(card);
     }
 
+    function updateFlow(index, field, value) {
+        const node = nodes.find(n => n.id === selectedNodeId);
+        if (!node) return;
+
+        if (!node.dialogFlow) node.dialogFlow = [];
+
+        node.dialogFlow[index][field] = value;
+
+        renderEditor();
+    }
+
     function updateField(field, value) {
         const node = nodes.find(n => n.id === selectedNodeId);
+        if (!node) return;
+
         node[field] = value;
-        render();
+        renderEditor(); 
     }
 
     function addChoiceToCurrent() {
         const node = nodes.find(n => n.id === selectedNodeId);
-        addChoice(node);
+        if (!node) return;
+
+        if (!node.dialogFlow) node.dialogFlow = [];
+
+        node.dialogFlow.push({
+            speaker: "npc",
+            text: ""
+        });
+
+        renderEditor();
     }
 
     function updateChoice(index, field, value) {
         const node = nodes.find(n => n.id === selectedNodeId);
-        node.choices[index][field] = value || null;
+        if (!node) return;
+
+        node.choices[index][field] = value;
+        renderEditor();
     }
 
     // -------------------------------
@@ -438,42 +471,40 @@
     // Хранилище логики
     // -------------------------------
     let logicData = {
-        triggers: []
+        functions: []
     };
 
     // -------------------------------
     // Добавление триггера
     // -------------------------------
-    function addTrigger() {
-        logicData.triggers.push({
-            type: "near+key",   // или "click"
-            target: "",         // npc id
-            key: "E",
-            range: 20,
-            action: {
-                type: "dialog",
-                nodeId: ""
-            }
+    function addFunction() {
+        logicData.functions.push({
+            id: Date.now().toString(),
+            category: "player",
+            type: "movement",
+            params: {}
         });
 
-        renderTriggers();
+        renderFunctions();
     }
 
     // -------------------------------
     // Список триггеров
     // -------------------------------
-    function renderTriggers() {
-        const list = document.getElementById("triggerList");
+    function renderFunctions() {
+        const list = document.getElementById("functionList");
         list.innerHTML = "";
 
-        logicData.triggers.forEach((t, i) => {
+        logicData.functions.forEach((f, i) => {
             const div = document.createElement("div");
             div.className = "card";
-            div.innerText = `${t.type} → ${t.action.type}`;
+            div.innerText = `${f.category || "?"} → ${f.type || "?"}`;
+
             div.onclick = () => {
-                selectedTriggerIndex = i;
-                renderTriggerEditor();
+                selectedFunctionIndex = i;
+                renderFunctionEditor();
             };
+
             list.appendChild(div);
         });
     }
@@ -481,43 +512,164 @@
     // -------------------------------
     // Редактор триггера
     // -------------------------------
-    function renderTriggerEditor() {
-        const editor = document.getElementById("triggerEditor");
-        editor.innerHTML = "";
+    let selectedFunctionIndex = null;
 
-        const t = logicData.triggers[selectedTriggerIndex];
-        if (!t) return;
+    function renderFunctionEditor() {
+        const editor = document.getElementById("functionEditor");
+        const f = logicData.functions[selectedFunctionIndex];
+        if (!f) return;
 
         editor.innerHTML = `
-            <label>Тип триггера</label>
-            <select onchange="updateTrigger('type', this.value)">
-                <option value="click" ${t.type==='click'?'selected':''}>Клик по NPC</option>
-                <option value="near+key" ${t.type==='near+key'?'selected':''}>
-                    Рядом + кнопка
-                </option>
+            <h3>${f.category}</h3>
+            <label>Тип функции</label>
+            <select onchange="updateFunction('type', this.value)">
+                ${getFunctionOptions(f.category, f.type)}
             </select>
 
-            <label>Имя спрайта</label>
-            <input value="${t.target}" onchange="updateTrigger('target', this.value)" />
-
-            <label>Кнопка (если нужно)</label>
-            <input value="${t.key}" onchange="updateTrigger('key', this.value)" />
-
-            <label>Дистанция</label>
-            <input type="number" value="${t.range}" onchange="updateTrigger('range', this.value)" />
-
-            <hr>
-
-            <label>Действие</label>
-            <select onchange="updateAction('type', this.value)">
-                <option value="dialog" ${t.action.type==='dialog'?'selected':''}>Диалог</option>
-                <option value="music" ${t.action.type==='music'?'selected':''}>Музыка</option>
-            </select>
-
-            <div id="actionParams"></div>
+            <div id="functionParams"></div>
         `;
 
-        renderActionParams(t);
+        renderFunctionParams(f);
+    }
+
+    
+    function renderFunctionParams(f) {
+        const div = document.getElementById("functionParams");
+        if (!div) return;
+
+        div.innerHTML = "";
+
+        // 🚶 ХОДЬБА
+        if (f.type === "movement") {
+            div.innerHTML = `
+                <label>Имя спрайта</label>
+                <input value="${f.params.sprite || ''}" 
+                    onchange="updateParam('sprite', this.value)" />
+
+                <label>Управление</label>
+                <select onchange="updateParam('control', this.value)">
+                    <option value="wasd">WASD</option>
+                    <option value="arrows">Стрелки</option>
+                </select>
+
+                <label>Скорость</label>
+                <input type="number" value="${f.params.speed || 100}" 
+                    onchange="updateParam('speed', this.value)" />
+            `;
+        }
+
+        // 💬 NPC
+        if (f.type === "npc") {
+            div.innerHTML = `
+                <label>Подтип</label>
+                <select onchange="updateParam('subtype', this.value)">
+                    <option value="dialog">Диалог</option>
+                </select>
+
+                <label>Условие</label>
+                <input value="near+key" disabled />
+
+                <label>Кнопка</label>
+                <input value="${f.params.key || 'E'}"
+                    onchange="updateParam('key', this.value)" />
+
+                <label>Диалог</label>
+                <input onchange="updateParam('dialog', this.value)" />
+
+                <label>Игрок</label>
+                <input onchange="updateParam('player', this.value)" />
+
+                <label>NPC</label>
+                <input onchange="updateParam('npc', this.value)" />
+            `;
+        }
+
+        // 🚧 ОБЪЕКТ
+        if (f.type === "object") {
+            div.innerHTML = `
+                <label>Подтип</label>
+                <select onchange="updateParam('subtype', this.value)">
+                    <option value="block">Блокирование</option>
+                </select>
+
+                <label>Условие</label>
+                <input value="collision" disabled />
+
+                <label>Игрок</label>
+                <input onchange="updateParam('player', this.value)" />
+
+                <label>Объект</label>
+                <input onchange="updateParam('object', this.value)" />
+            `;
+        }
+    }
+
+    // -------------------------------
+    // Варианты функций
+    // -------------------------------
+    function getFunctionOptions(category, selected) {
+        if (category === "player") {
+            return `
+                <option value="movement" ${selected==='movement'?'selected':''}>Ходьба</option>
+                <option value="npc" ${selected==='npc'?'selected':''}>Взаимодействие с NPC</option>
+                <option value="object" ${selected==='object'?'selected':''}>Взаимодействие с объектом</option>
+            `;
+        }
+
+        if (category === "npc") {
+            return `
+                <option value="dialog">Диалог</option>
+                <label>NPC</label>
+                <input onchange="updateParam('npc', this.value)" />
+                <label>Объект</label>
+                <input onchange="updateParam('object', this.value)" />
+            `;
+        }
+
+        if (category === "object") {
+            return `
+                <option value="block">Блокировка</option>
+                <label>NPC</label>
+                <input onchange="updateParam('npc', this.value)" />
+                <label>Объект</label>
+                <input onchange="updateParam('object', this.value)" />
+            `;
+        }
+
+        return `<option value="">--</option>`;
+    }
+
+    async function saveFunctions() {
+        // защита
+        if (!logicData.functions || logicData.functions.length === 0) {
+            alert("Нет функций для сохранения!");
+            return;
+        }
+
+        const payload = {
+            functions: logicData.functions
+        };
+
+        try {
+            const response = await fetch("/logic/save/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                alert("Ошибка: " + (data.detail || "неизвестная ошибка"));
+                return;
+            }
+
+            alert("Функции успешно сохранены!");
+        } catch (e) {
+            console.error(e);
+            alert("Ошибка сети");
+        }
     }
 
     // -------------------------------
@@ -546,25 +698,87 @@
     // -------------------------------
     // Обновление данных
     // -------------------------------
-    function updateTrigger(field, value) {
-        logicData.triggers[selectedTriggerIndex][field] = value;
-        renderTriggers();
+    function updateFunction(field, value) {
+        const f = logicData.functions[selectedFunctionIndex];
+
+        f[field] = value;
+
+        // если меняется тип — сбрасываем параметры
+        if (field === "type") {
+            f.params = {};
+        }
+
+        renderFunctions();
+        renderFunctionEditor();
     }
 
-    function updateAction(field, value) {
-        logicData.triggers[selectedTriggerIndex].action[field] = value;
+    function updateParam(field, value) {
+        logicData.functions[selectedFunctionIndex].params[field] = value;
     }
 
-    let selectedTriggerIndex = null;
+    function runFunctions(event) {
+        logicData.functions.forEach(fn => {
 
-    function runTriggers(event) {
-        logicData.triggers.forEach(trigger => {
-            if (trigger.type === "click") {
-                if (event.type === "npcClick" && event.id === trigger.target) {
-                    runAction(trigger.action);
+            //  ХОДЬБА
+            if (fn.type === "movement") {
+                if (event.type === "movement") {
+                    applyMovement(fn.params, event);
+                }
+            }
+
+            // NPC взаимодействие
+            if (fn.type === "npc") {
+                if (
+                    event.type === "npcInteraction" &&
+                    event.npc === fn.params.npc &&
+                    event.player === fn.params.player
+                ) {
+                    if (event.key === fn.params.key) {
+                        startDialog(fn.params.dialog);
+                    }
+                }
+            }
+
+            //  ОБЪЕКТЫ
+            if (fn.type === "object") {
+                if (
+                    event.type === "collision" &&
+                    event.object === fn.params.object &&
+                    event.player === fn.params.player
+                ) {
+                    blockMovement(event);
                 }
             }
         });
+    }
+
+    function createFunction(category) {
+        const fn = {
+            id: Date.now().toString(),
+            category,
+            type: null,
+            params: {},
+            action: {}
+        };
+
+        logicData.functions.push(fn);
+
+        selectedFunctionIndex = logicData.functions.length - 1;
+
+        renderFunctions();
+        renderFunctionEditor();
+    }
+
+    function showFunctionCategoryPicker() {
+        const editor = document.getElementById("functionEditor");
+
+        editor.innerHTML = `
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="category-btn" onclick="createFunction('player')">🎮 Игрок</button>
+                <button class="category-btn" onclick="createFunction('npc')">💬 NPC</button>
+                <button class="category-btn" onclick="createFunction('object')">📦 Объект</button>
+            </div>
+        `;
     }
 
     async function handleReload() {
@@ -587,13 +801,28 @@
                         const res = await fetch(`/sprites/get_sprite_logic/${sprite.sprite_name}/`, {
                             credentials: 'include'
                         });
+
                         if (res.ok) {
                             const blocks = await res.json();
+
                             const main = blocks.find(b => b.name === 'main') || blocks[0];
-                            return { ...sprite, trigger_config: main?.trigger_config || [] };
+
+                            return {
+                                ...sprite,
+                                functions:
+                                    main?.functions ??
+                                    main?.trigger_config ??
+                                    []
+                            };
                         }
-                    } catch (e) { console.warn('Не загрузилась логика для', sprite.sprite_name, e); }
-                    return { ...sprite, trigger_config: [] };
+                    } catch (e) {
+                        console.warn('Не загрузилась логика для', sprite.sprite_name, e);
+                    }
+
+                    return {
+                        ...sprite,
+                        functions: []
+                    };
                 })
             );
 
@@ -617,10 +846,13 @@
     window.addChoiceToCurrent = addChoiceToCurrent;
     window.updateField = updateField;
     window.updateChoice = updateChoice;
-    window.addTrigger = addTrigger;
-    window.saveTrigger = saveTrigger;
-    window.updateTrigger = updateTrigger;
     window.updateAction = updateAction; 
+    window.addFunction = addFunction;
+    window.updateFunction = updateFunction;
+    window.updateParam = updateParam;
+    window.saveFunctions = saveFunctions;
+    window.showFunctionCategoryPicker = showFunctionCategoryPicker;
+    window.createFunction = createFunction;
 
     function renderFileList(container, files) {
         let filesContainer = container.querySelector('.files-container');
@@ -670,17 +902,29 @@
             filesContainer.appendChild(fileCard);
         });
     }
+
+    function updateAction(field, value) {
+        const t = logicData.functions[selectedFunctionIndex];
+        if (!t || !t.action) return;
+
+        t.action[field] = value;
+
+        renderActionParams(t);
+    }
     
     function handleFileSelect(file) {
         switch (file.fileType) {
+
             case 'map':
                 activeScene.mapId = file.id;
                 break;
 
             case 'sprite':
-                // Загружаем триггеры в память редактора
-                logicData.triggers = file.trigger_config || [];
-                selectedTriggerIndex = null; // сброс выделения
+                logicData.functions = file.functions || [];
+
+                // сброс выделения (под новую систему)
+                selectedFunctionIndex = null;
+
                 addSpriteToScene(file);
                 break;
 
@@ -702,7 +946,7 @@
 
         activeScene.objects.push(obj);
 
-        renderScene(); // 🔥 ВОТ ЭТО ДОБАВЬ
+        renderScene();
     }
 
     let activeScene = {
@@ -1083,53 +1327,6 @@
     });
 
 
-
-    async function saveTrigger() {
-        if (selectedTriggerIndex === null) {
-            alert("Сначала выбери триггер из списка слева!");
-            return;
-        }
-
-        const currentTrigger = logicData.triggers[selectedTriggerIndex];
-
-        const spriteName = currentTrigger.target;
-
-        if (!spriteName) {
-            console.warn("Поле target пустое. Прерывание.");
-            alert("Введите имя спрайта в поле 'Имя спрайта' этого триггера!");
-            return;
-        }
-
-        // Бэкенд ждёт массив, поэтому оборачиваем один триггер в []
-        const payload = {
-            sprite_name: spriteName,
-            trigger_config: currentTrigger 
-        };
-    
-        try {
-            const response = await fetch("/sprites/update_sprite_logic/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(payload)
-            });
-
-            
-            // Читаем тело ответа (даже при ошибке 422 там будет детальное описание)
-            const data = await response.json();
-
-            if (!response.ok) {
-                alert("Ошибка: " + (data.detail || "неизвестная"));
-                return;
-            }
-
-            alert("Триггер сохранён!");
-        } catch(e) {
-            alert("Ошибка сети");
-        }
-    }
-
-
     // -------------------------------
     // Переключение секций
     // -------------------------------
@@ -1176,25 +1373,26 @@
                 <div style="display:flex; height:100%;">
                     
                     <div style="width:300px; padding:10px;">
-                        <button class="button" onclick="saveTrigger()">Сохранение</button>
-                        <button onclick="addTrigger()">+ Добавить триггер</button>
-                        <div id="triggerList"></div>
+                        <button class="button" onclick="saveFunctions()">Сохранение</button>
+                        <button class="button" onclick="showFunctionCategoryPicker()">+ Добавить функцию</button>
+                        <div id="functionList"></div>
                     </div>
 
                     <div style="flex:1; padding:10px;">
-                        <h3>Редактор триггера</h3>
-                        <div id="triggerEditor"></div>
+                        <h3>Конструктор функций</h3>
+                        <div id="functionEditor"></div>
                     </div>
 
                 </div>
             `;
-            renderTriggers();
+
+            renderFunctions();
         } else if(section==='dialog'){
             container.innerHTML = `
                 <div style="display:flex; height:100%;">
                     
                     <div style="width:250px; padding:10px; background:rgba(0,0,0,0.2);">
-                        <button class="button new-replica" onclick="addNode()">Добавить реплику</button>
+                        <button class="button new-replica" onclick="addNode()">Добавить диалог</button>
                         <div id="nodeList"></div>
                     </div>
 
