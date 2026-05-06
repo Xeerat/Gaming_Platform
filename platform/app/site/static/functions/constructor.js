@@ -1154,25 +1154,23 @@
     function deleteObject(){
         if(!selectedObject) return;
 
+    console.log("selectedObject:", selectedObject);
+    console.log("phaserRef:", selectedObject?._phaserRef);
         // 1. удалить Phaser sprite
         if(selectedObject._phaserRef){
             selectedObject._phaserRef.destroy();
-            selectedObject._phaserRef = null;
         }
 
-        // 2. удалить из сцены-данных
+        // 2. удалить из массива
         activeScene.objects = activeScene.objects.filter(
             o => o.id !== selectedObject.id
         );
 
-        // 3. очистить выделение
+        // 3. очистить выбор
         selectedObject = null;
 
-        // 4. перерисовать UI
+        // 4. обновить UI
         renderObjectEditor();
-
-        // 5. ОБЯЗАТЕЛЬНО перерендер сцены (важно!)
-        renderScene();
     }
 
     function renderObjectEditor(){
