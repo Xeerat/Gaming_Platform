@@ -776,14 +776,14 @@ async function saveProject() {
 
         if (response.ok) {
             const result = await response.json();
-            alert(`Проект "${title}" сохранён! ID: ${result.id}`);
+            alert(`Проект "${title}" сохранён!`);
         } else {
             const errorData = await response.json();
             alert(`Ошибка сохранения: ${errorData.detail || "Неизвестная ошибка"}`);
         }
     } catch (err) {
         console.error("Save error:", err);
-        alert("Не удалось сохранить проект. Проверьте соединение с сервером.");
+        alert("Не удалось сохранить проект. Возможно вы не добавили превью.");
     }
 }
 
