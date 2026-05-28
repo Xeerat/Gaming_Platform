@@ -41,6 +41,7 @@
     let phaserGame;
     let nodes = [];
     let selectedNodeId = null;
+    let currentLogicTarget = null;
     const fileDataStore = new Map();
     let selectedSpriteType = 'NPC';
 
@@ -515,7 +516,8 @@
             id: Date.now().toString(),
             category: "player",
             type: "movement",
-            params: {}
+            params: {},
+            action: {}
         });
 
         renderFunctions();
@@ -526,6 +528,10 @@
     // -------------------------------
     function renderFunctions() {
         const list = document.getElementById("functionList");
+        if (!list) {
+            console.warn("functionList not found in DOM - skipping render");
+            return;  // Просто выходим если элемента нет
+        }
         list.innerHTML = "";
 
         logicData.functions.forEach((f, i) => {
@@ -549,6 +555,10 @@
 
     function renderFunctionEditor() {
         const editor = document.getElementById("functionEditor");
+        if (!editor) {
+            console.warn("functionEditor not found - skipping");
+            return;
+        }
         const f = logicData.functions[selectedFunctionIndex];
         if (!f) return;
 
@@ -648,63 +658,105 @@
                 <option value="object" ${selected==='object'?'selected':''}>Взаимодействие с объектом</option>
             `;
         }
-
-        if (category === "npc") {
-            return `
-                <option value="dialog">Диалог</option>
-                <label>NPC</label>
-                <input onchange="updateParam('npc', this.value)" />
-                <label>Объект</label>
-                <input onchange="updateParam('object', this.value)" />
-            `;
-        }
-
-        if (category === "object") {
-            return `
-                <option value="block">Блокировка</option>
-                <label>NPC</label>
-                <input onchange="updateParam('npc', this.value)" />
-                <label>Объект</label>
-                <input onchange="updateParam('object', this.value)" />
-            `;
-        }
-
         return `<option value="">--</option>`;
     }
 
     async function saveFunctions() {
-        // защита
-        if (!logicData.functions || logicData.functions.length === 0) {
-            alert("Нет функций для сохранения!");
-            return;
-        }
-
-        const payload = {
-            functions: logicData.functions
-        };
-
-        try {
-            const response = await fetch("/logic/save/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json().catch(() => ({}));
-
-            if (!response.ok) {
-                alert("Ошибка: " + (data.detail || "неизвестная ошибка"));
-                return;
-            }
-
-            alert("Функции успешно сохранены!");
-        } catch (e) {
-            console.error(e);
-            alert("Ошибка сети");
-        }
+    if (!logicData.functions || logicData.functions.length === 0) {
+        alert("Нет функций для сохранения!");
+        return;
     }
 
+    // Группируем функции по спрайтам
+    const functionsBySprite = {};
+    
+        for (const fn of logicData.functions) {
+            let targetSpriteName = null;
+            
+            if (fn.type === "movement") {
+                targetSpriteName = fn.params.sprite;
+            } else if (fn.type === "npc") {
+                targetSpriteName = fn.params.npc;
+                
+                // ← ДОБАВЛЯЕМ: Сохраняем диалог по названию
+                const dialogName = fn.params.dialog;
+                if (dialogName) {
+                    // Ищем диалог по названию в nodes
+                    const dialog = nodes.find(n => n.dialogName === dialogName);
+                    if (dialog) {
+                        // Сохраняем полный диалог в params
+                        fn.params.dialogData = dialog;
+                        console.log(`Saved dialog "${dialogName}" to function`);
+                    } else {
+                        console.warn(`Dialog "${dialogName}" not found in nodes`);
+                    }
+                }
+                
+            } else if (fn.type === "object") {
+                targetSpriteName = fn.params.object;
+            }
+            
+            if (!targetSpriteName) {
+                console.warn(`Нет target спрайта для функции ${fn.type}`, fn);
+                continue;
+            }
+            
+            if (!functionsBySprite[targetSpriteName]) {
+                functionsBySprite[targetSpriteName] = [];
+            }
+            
+            // Очищаем функцию от лишнего
+            const cleanedFunction = {
+                category: fn.category,
+                type: fn.type,
+                params: fn.params,
+                action: fn.action || {}
+            };
+            
+            functionsBySprite[targetSpriteName].push(cleanedFunction);
+        }
+        
+        // Сохраняем для каждого спрайта
+        for (const [spriteName, functions] of Object.entries(functionsBySprite)) {
+            const triggerConfig = {};
+            functions.forEach((fn, index) => {
+                triggerConfig[`func_${index}`] = fn;
+            });
+            
+            const payload = {
+                sprite_name: spriteName,
+                name: "main",
+                trigger_config: triggerConfig,
+                dialog_config: {},
+                dialog_role: "system"
+            };
+            
+            console.log(`Saving for ${spriteName}:`, payload);
+            
+            try {
+                const response = await fetch("/sprites/update_sprite_logic/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    console.error("Server error:", data);
+                    throw new Error(data.detail || "ошибка");
+                }
+                
+                console.log(`Saved for ${spriteName}`);
+            } catch (e) {
+                console.error(e);
+                alert(`Ошибка: ${e.message}`);
+                return;
+            }
+        }
+        
+        alert("Логика сохранена!");
+    }
     // -------------------------------
     // Параметры действия
     // -------------------------------
@@ -785,19 +837,16 @@
         });
     }
 
-    function createFunction(category) {
+    function createFunction() {
         const fn = {
             id: Date.now().toString(),
-            category,
+            category: "player",
             type: null,
             params: {},
             action: {}
         };
-
         logicData.functions.push(fn);
-
         selectedFunctionIndex = logicData.functions.length - 1;
-
         renderFunctions();
         renderFunctionEditor();
     }
@@ -807,9 +856,7 @@
 
         editor.innerHTML = `
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="category-btn" onclick="createFunction('player')">🎮 Игрок</button>
-                <button class="category-btn" onclick="createFunction('npc')">💬 NPC</button>
-                <button class="category-btn" onclick="createFunction('object')">📦 Объект</button>
+                <button class="category-btn" onclick="createFunction()">🎮 Добавить функцию</button>
             </div>
         `;
     }
@@ -827,35 +874,37 @@
             if (!spritesRes.ok) return window.location.href = '/auth/login/';
             const sprites = await spritesRes.json();
 
-            //  Загружаем логику для каждого спрайта
+            // Загружаем логику для каждого спрайта
             const spritesWithLogic = await Promise.all(
                 sprites.map(async (sprite) => {
                     try {
                         const res = await fetch(`/sprites/get_sprite_logic/${sprite.sprite_name}/`, {
                             credentials: 'include'
                         });
-
                         if (res.ok) {
                             const blocks = await res.json();
-
                             const main = blocks.find(b => b.name === 'main') || blocks[0];
-
+                            
+                            // Превращаем объект обратно в массив
+                            let functionsArray = [];
+                            const triggerConfig = main?.trigger_config;
+                            
+                            if (triggerConfig && typeof triggerConfig === 'object') {
+                                // Объект с ключами func_0, func_1 и т.д.
+                                functionsArray = Object.values(triggerConfig);
+                            }
+                            
+                            console.log(`Functions for ${sprite.sprite_name}:`, functionsArray);
+                            
                             return {
                                 ...sprite,
-                                functions:
-                                    main?.functions ??
-                                    main?.trigger_config ??
-                                    []
+                                functions: functionsArray
                             };
                         }
                     } catch (e) {
                         console.warn('Не загрузилась логика для', sprite.sprite_name, e);
                     }
-
-                    return {
-                        ...sprite,
-                        functions: []
-                    };
+                    return { ...sprite, functions: [] };
                 })
             );
 
@@ -948,30 +997,56 @@
     
     function handleFileSelect(file) {
         switch (file.fileType) {
-
             case 'map':
                 activeScene.mapId = file.id;
                 break;
 
             case 'sprite':
                 logicData.functions = file.functions || [];
-
-                // сброс выделения (под новую систему)
                 selectedFunctionIndex = null;
-
+                
+                // Рисуем функции ТОЛЬКО если мы во вкладке логики
+                if (document.getElementById("functionList")) {
+                    renderFunctions();
+                }
+                
                 addSpriteToScene(file);
-                break;
-
-            case 'music':
-                activeScene.music = file.url;
                 break;
         }
     }
     
 
     function addSpriteToScene(file) {
+        console.log("=== addSpriteToScene CALLED ===");
+        console.log("file.functions:", file.functions);
+        
+        // ОБЪЯВЛЯЕМ переменную functionsArray
+        let functionsArray = [];
+        
+        if (file.functions) {
+            if (Array.isArray(file.functions)) {
+                functionsArray = file.functions;
+            } else if (typeof file.functions === 'object') {
+                functionsArray = Object.values(file.functions);
+            }
+        }
+        
+        console.log("functionsArray:", functionsArray);
 
-         if (sceneMode === 'test') {
+        if (functionsArray.length > 0) {
+            logicData.functions = functionsArray;
+            console.log("logicData.functions updated:", logicData.functions);
+        }
+        
+        // СОХРАНЯЕМ функции в глобальную переменную
+        if (functionsArray.length > 0) {
+            logicData.functions = functionsArray;
+            if (document.getElementById("functionList")) {
+                renderFunctions();
+            }
+        }
+        
+        if (sceneMode === 'test') {
             alert("Нельзя добавлять объекты в режиме теста!");
             return;
         }
@@ -984,9 +1059,15 @@
             scaleX: 1,
             scaleY: 1
         };
-
+        
+        console.log("Created object:", obj);
+        console.log("activeScene.objects before push:", activeScene.objects.length);
+        
         activeScene.objects.push(obj);
-
+        
+        console.log("activeScene.objects after push:", activeScene.objects.length);
+        console.log("Calling renderScene()...");
+        
         renderScene();
     }
 
@@ -998,9 +1079,18 @@
 
     let selectedObject = null;
     function renderScene() {
+        console.log("=== renderScene CALLED ===");
+        console.log("activeScene.mapId:", activeScene.mapId);
+        console.log("activeScene.objects.length:", activeScene.objects.length);
+        
         const container = document.getElementById('sceneContent');
+        if (!container) {
+            console.error("sceneContent not found!");
+            return;
+        }
 
         if (!activeScene.mapId) {
+            console.log("No map selected");
             container.innerHTML = "<p>Выбери карту</p>";
             return;
         }
@@ -1010,11 +1100,15 @@
         const mapFile = [...fileDataStore.values()]
             .find(f => f.fileType === 'map' && f.id === activeScene.mapId);
 
+        console.log("mapFile:", mapFile);
+        
         if (!mapFile) {
+            console.error("Map not found!");
             container.innerHTML = "<p>Карта не найдена</p>";
             return;
         }
 
+        console.log("Calling initScenePhaser...");
         initScenePhaser(document.getElementById('scenePhaser'), mapFile.data);
     }
 
@@ -1077,6 +1171,10 @@
     let dragging = false;
 
     function initScenePhaser(container, map) {
+        console.log("=== initScenePhaser CALLED ===");
+        console.log("container exists:", !!container);
+        console.log("map length:", map?.length);
+        console.log("sceneMode:", sceneMode);
         if (phaserGame) phaserGame.destroy(true);
         if (!map || !map.length) return;
 
@@ -1086,15 +1184,15 @@
             height: map.length * tileSize,
             parent: container,
             backgroundColor: '#000000',
+            transparent: false,
 
             physics: {
                 default: 'arcade',
                 arcade: { 
                     debug: false,
-                    gravity: { y: 0 } // Чтобы игрока не тянуло вниз
+                    gravity: { y: 0 }
                 }
             },
-
 
             scene: {
                 preload: function () {
@@ -1104,51 +1202,52 @@
                 },
 
                 create: function () {
-
+                    console.log("=== SCENE CREATE ===");
+                    
                     if (activeScene.music) {
                         const music = this.sound.add('bgMusic', {
                             loop: true,
                             volume: 0.5
                         });
                         music.play();
-
-                        this._bgMusic = music; // сохраним ссылку
+                        this._bgMusic = music;
                     }
 
                     this.input.once('pointerdown', () => {
-                    if (this._bgMusic && !this._bgMusic.isPlaying) {
-                        this._bgMusic.play();
-                    }
-                });
+                        if (this._bgMusic && !this._bgMusic.isPlaying) {
+                            this._bgMusic.play();
+                        }
+                    });
 
+                    // Рисуем карту
                     const g = this.add.graphics();
-
-                    // ---- рисуем карту ----
+                    console.log("Drawing map...");
+                    
                     for (let y = 0; y < map.length; y++) {
                         for (let x = 0; x < map[y].length; x++) {
                             const color = Phaser.Display.Color
                                 .HexStringToColor(map[y][x].color).color;
-
                             g.fillStyle(color, 1);
-                            g.fillRect(
-                                x * tileSize,
-                                y * tileSize,
-                                tileSize,
-                                tileSize
-                            );
+                            g.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
                         }
                     }
-
+                    g.setDepth(-1);
+                    console.log("Map drawn");
                     
                     if (sceneMode === 'build') {
                         setupBuildMode(this);
                     } else if (sceneMode === 'test') {
+                        loadFunctionsFromSceneObjects();
                         setupTestMode(this);
                     }
+                },
 
-
-                } 
-            } 
+                update: function() {
+                    if (sceneMode === 'test' && this.playerUpdate) {
+                        this.playerUpdate();
+                    }
+                }
+            }
         };
 
         phaserGame = new Phaser.Game(config);
@@ -1432,13 +1531,13 @@
 
     function getBlockerObjects() {
         return logicData.functions
-            .filter(f => f.category === 'object' && f.type === 'object' && f.params.subtype === 'block')
+            .filter(f => f.type === 'object')
             .map(f => f.params);
     }
 
     function getDialogNPCs() {
         return logicData.functions
-            .filter(f => f.category === 'player' && f.type === 'npc' && f.params.subtype === 'dialog')
+            .filter(f => f.type === 'npc')  // ← убираем проверку на category и subtype
             .map(f => f.params);
     }
 
@@ -1561,58 +1660,87 @@
     }
 
     function setupTestMode(scene) {
-        // Генерация текстур (без интерактива)
-        activeScene.objects.forEach(obj => {
-            const file = [...fileDataStore.values()].find(f => f.id === obj.assetId && f.fileType === 'sprite');
-            if (file && !scene.textures.exists(`sprite_${file.id}`)) {
-                buildSpriteTexture(scene, file);
-            }
-        });
-
-        // Отрисовка объектов статично
+        console.log("=== setupTestMode CALLED ===");
+        console.log("logicData.functions BEFORE:", logicData.functions);
+        
+        loadFunctionsFromSceneObjects();
+        
+        console.log("logicData.functions AFTER load:", logicData.functions);
+        
+        // Получаем имя спрайта игрока из конфига
+        const moveConfig = getPlayerMovementConfig();
+        const playerSpriteName = moveConfig?.params?.sprite;
+        
+        // Отрисовка объектов статично (КРОМЕ спрайта игрока)
         activeScene.objects.forEach(obj => {
             const file = [...fileDataStore.values()].find(f => f.id === obj.assetId && f.fileType === 'sprite');
             if (!file) return;
+            
+            // ПРОПУСКАЕМ спрайт игрока - он будет создан отдельно
+            if (file.sprite_name === playerSpriteName) {
+                console.log("Skipping player sprite, will be created separately");
+                return;
+            }
+            
             const textureKey = `sprite_${file.id}`;
-            if (!scene.textures.exists(textureKey)) return;
-
+            if (!scene.textures.exists(textureKey)) {
+                buildSpriteTexture(scene, file);
+            }
+            
             const sprite = scene.add.sprite(obj.x, obj.y, textureKey);
             sprite.setOrigin(0.5);
             sprite.setScale(obj.scaleX ?? 1, obj.scaleY ?? 1);
-            obj._phaserRef = sprite; // для возможного доступа
+            obj._phaserRef = sprite;
         });
-
+        
         // Инициализация игрока и логики
         initTestModeLogic(scene);
     }
 
     function initTestModeLogic(scene) {
+        console.log("=== initTestModeLogic CALLED ===");
+        console.log("logicData.functions:", logicData.functions);
+        
+        logicData.functions.forEach((fn, i) => {
+            console.log(`Function ${i}:`, fn);
+            console.log(`  category: ${fn.category}, type: ${fn.type}`);
+        });
+        
         const moveConfig = getPlayerMovementConfig();
+        console.log("moveConfig:", moveConfig);
         const speed = moveConfig?.params?.speed || 200;
         const controlType = moveConfig?.params?.control || 'wasd';
         const playerSpriteName = moveConfig?.params?.sprite;
-
+        
+        console.log("playerSpriteName:", playerSpriteName);
+        console.log("All sprites in fileDataStore:", [...fileDataStore.values()].filter(f => f.fileType === 'sprite').map(f => ({ id: f.id, name: f.sprite_name })));
+        
         // Создаём игрока
         const playerObj = activeScene.objects.find(o => {
-            const file = [...fileDataStore.values()].find(f => f.id === o.assetId);
-            return file?.name === playerSpriteName;
+            const file = [...fileDataStore.values()].find(f => f.id === o.assetId && f.fileType === 'sprite');
+            console.log("Checking object:", o.assetId, "file:", file?.sprite_name, "vs needed:", playerSpriteName);
+            return file?.sprite_name === playerSpriteName;
         });
         
+        console.log("playerObj found:", playerObj);
+    
         const playerFile = playerObj ? [...fileDataStore.values()].find(f => f.id === playerObj.assetId) : null;
+        console.log("playerFile:", playerFile);
         
         if (playerFile) {
             buildSpriteTexture(scene, playerFile);
             playerSprite = scene.add.sprite(playerObj?.x || 100, playerObj?.y || 100, `sprite_${playerFile.id}`);
+            console.log("playerSprite created:", playerSprite);
         } else {
-            playerSprite = scene.add.rectangle(100, 100, 32, 32, 0x00ff00); // заглушка
+            playerSprite = scene.add.rectangle(100, 100, 32, 32, 0x00ff00);
+            console.log("playerSprite created (fallback rectangle):", playerSprite);
         }
         
         playerSprite.setOrigin(0.5);
-
-        
         scene.physics.add.existing(playerSprite);
         playerSprite.body.setCollideWorldBounds(true);
-
+        console.log("playerSprite physics added, body:", playerSprite.body);
+        
         // Управление
         scene.input.keyboard.enabled = true;
         if (controlType === 'arrows') {
@@ -1626,32 +1754,61 @@
                 right: Phaser.Input.Keyboard.KeyCodes.D
             });
         }
+        console.log("controlKeys set:", scene.controlKeys);
 
         // Коллизии с блокирующими объектами
         const blockers = getBlockerObjects();
+        logicData.functions.forEach((fn, i) => {
+            console.log(`Function ${i} params:`, fn.params);
+        });
+        console.log("Blockers found:", blockers);
         const colliderList = [];
+
         blockers.forEach(params => {
+            console.log("Looking for blocker object:", params.object);
+            
             const obj = activeScene.objects.find(o => {
-                const file = [...fileDataStore.values()].find(f => f.id === o.assetId);
-                return file?.name === params.object;
+                const file = [...fileDataStore.values()].find(f => f.id === o.assetId && f.fileType === 'sprite');
+                return file?.sprite_name === params.object;
             });
+            
+            console.log("Found blocker obj:", obj);
+            
             if (obj) {
-                const col = scene.add.rectangle(obj.x, obj.y, 32, 32, 0xff0000, 0);
+                // Создаём невидимый коллайдер
+                const col = scene.add.rectangle(obj.x, obj.y, 32, 32);
                 scene.physics.add.existing(col);
                 col.body.setImmovable(true);
+                col.body.setAllowGravity(false);
+                col.visible = false;
                 colliderList.push(col);
+                console.log("Blocker added at", obj.x, obj.y);
             }
         });
-        if (colliderList.length) scene.physics.add.collider(playerSprite, colliderList);
 
+        if (colliderList.length) {
+            scene.physics.add.collider(playerSprite, colliderList);
+            console.log("Colliders added, count:", colliderList.length);
+        } else {
+            console.warn("No blockers found!");
+        }
         // NPC для диалогов
         const dialogNPCs = getDialogNPCs();
+        console.log("Dialog NPCs found:", dialogNPCs);
+        console.log("Full dialog configs:", logicData.functions.filter(f => f.type === 'npc'));
+
         scene.npcList = [];
         dialogNPCs.forEach(params => {
+            console.log("Processing dialog NPC:", params);
+            
             const obj = activeScene.objects.find(o => {
-                const file = [...fileDataStore.values()].find(f => f.id === o.assetId);
-                return file?.name === params.npc;
+                const file = [...fileDataStore.values()].find(f => f.id === o.assetId && f.fileType === 'sprite');
+                console.log("  Looking for object with name:", params.npc, "found file:", file?.sprite_name);
+                return file?.sprite_name === params.npc;
             });
+            
+            console.log("Found NPC object:", obj);
+            
             if (obj) {
                 const file = [...fileDataStore.values()].find(f => f.id === obj.assetId);
                 if (file) {
@@ -1661,9 +1818,12 @@
                     npc.setData('dialogId', params.dialog);
                     npc.setData('interactKey', params.key || 'E');
                     scene.npcList.push(npc);
+                    console.log("NPC added to scene.npcList, dialogId:", params.dialog);
                 }
             }
         });
+
+        console.log("Total NPCs in scene.npcList:", scene.npcList.length);
 
         // Функция обновления кадра
         scene.playerUpdate = function() {
@@ -1675,9 +1835,10 @@
             if (keys.up.isDown) playerSprite.body.setVelocityY(-speed);
             else if (keys.down.isDown) playerSprite.body.setVelocityY(speed);
             
-            // Проверка диалогов
             checkNPCInteractions(scene);
+            
         };
+        console.log("playerUpdate function assigned, speed:", speed);
     }
 
     function checkNPCInteractions(scene) {
@@ -1695,6 +1856,244 @@
                     break;
                 }
             }
+        }
+    }
+
+
+    function loadFunctionsFromSceneObjects() {
+        console.log("=== loadFunctionsFromSceneObjects CALLED ===");
+        
+        // Собираем функции со всех спрайтов на сцене
+        let allFunctions = [];
+        
+        for (const obj of activeScene.objects) {
+            const file = [...fileDataStore.values()].find(f => f.id === obj.assetId && f.fileType === 'sprite');
+            if (file && file.functions && file.functions.length > 0) {
+                console.log(`Found functions for ${file.sprite_name}:`, file.functions);
+                allFunctions = allFunctions.concat(file.functions);
+            }
+        }
+        
+        if (allFunctions.length > 0) {
+            logicData.functions = allFunctions;
+            console.log("logicData.functions updated with", allFunctions.length, "functions");
+        } else {
+            console.warn("No functions found in scene objects");
+        }
+    }
+
+
+    let currentDialog = null;
+    let currentStep = 0;
+
+    function startDialog(dialogId) {
+        console.log("=== startDialog CALLED ===", dialogId);
+        
+        // Ищем диалог
+        let dialog = nodes.find(n => n.id === dialogId || n.dialogName === dialogId);
+        
+        if (!dialog) {
+            const npcFunction = logicData.functions.find(f => 
+                f.type === 'npc' && f.params.dialog === dialogId
+            );
+            if (npcFunction?.params?.dialogData) {
+                dialog = npcFunction.params.dialogData;
+                console.log("Found dialog in function data:", dialog);
+            }
+        }
+        
+        if (!dialog) {
+            console.error("Dialog not found:", dialogId);
+            return;
+        }
+        
+        console.log("Dialog object:", dialog);
+        console.log("dialogFlow:", dialog.dialogFlow);
+        console.log("dialogFlow length:", dialog.dialogFlow?.length);
+        console.log("npcText:", dialog.npcText);
+        console.log("playerText:", dialog.playerText);
+        
+        // Если нет dialogFlow, но есть npcText - создаём простой диалог
+        if ((!dialog.dialogFlow || dialog.dialogFlow.length === 0) && dialog.npcText) {
+            console.log("Creating simple dialog from npcText");
+            dialog.dialogFlow = [
+                { speaker: "npc", text: dialog.npcText }
+            ];
+            if (dialog.playerText) {
+                dialog.dialogFlow.push({ speaker: "player", text: dialog.playerText });
+            }
+        }
+        
+        if (!dialog.dialogFlow || dialog.dialogFlow.length === 0) {
+            console.error("Dialog has no content!");
+            // Создаём тестовый диалог
+            dialog.dialogFlow = [
+                { speaker: "npc", text: dialog.npcText || "Привет!" },
+                { speaker: "player", text: dialog.playerText || "Здравствуй!" }
+            ];
+        }
+        
+        currentDialog = dialog;
+        currentStep = 0;
+        
+        showDialogStep();
+    }
+
+    function showDialogStep() {
+        if (!currentDialog) return;
+        
+        const dialogFlow = currentDialog.dialogFlow || [];
+        
+        // Если диалог закончился - закрываем
+        if (currentStep >= dialogFlow.length) {
+            closeDialog();
+            return;
+        }
+        
+        const step = dialogFlow[currentStep];
+        const isNPC = step.speaker === 'npc';
+        const speakerName = isNPC ? (currentDialog.npcName || 'NPC') : (currentDialog.playerName || 'Игрок');
+        const text = step.text || '...';
+        
+        // Создаём или обновляем окно диалога
+        let dialogBox = document.getElementById('dialogBox');
+        if (!dialogBox) {
+            dialogBox = document.createElement('div');
+            dialogBox.id = 'dialogBox';
+            dialogBox.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.9);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                font-family: monospace;
+                z-index: 10000;
+                cursor: pointer;
+            `;
+            document.body.appendChild(dialogBox);
+        }
+        
+        dialogBox.innerHTML = `
+            <div style="margin-bottom: 10px;"><strong>${speakerName}:</strong></div>
+            <div>${text}</div>
+            <div style="margin-top: 10px; font-size: 12px; color: #888;">Нажмите чтобы продолжить</div>
+        `;
+        dialogBox.style.display = 'block';
+        
+        // Убираем старый обработчик и добавляем новый
+        const newHandler = () => {
+            currentStep++;
+            showDialogStep();
+        };
+        
+        // Заменяем обработчик
+        const oldHandler = dialogBox.onclick;
+        dialogBox.onclick = newHandler;
+    }
+
+    function closeDialog() {
+        const dialogBox = document.getElementById('dialogBox');
+        if (dialogBox) {
+            dialogBox.style.display = 'none';
+        }
+        currentDialog = null;
+        currentStep = 0;
+    }
+
+
+    let currentPreviewUrl = null;
+
+    async function uploadPreview() {
+        // Создаём скрытый input для выбора файла
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/upload/file/', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || 'Ошибка загрузки');
+                }
+                
+                const data = await response.json();
+                currentPreviewUrl = data.url;
+                alert('Превью загружено! Теперь можно сохранить сцену.');
+                
+            } catch (e) {
+                console.error(e);
+                alert('Ошибка загрузки превью: ' + e.message);
+            }
+        };
+        
+        input.click();
+    }
+
+    async function saveCurrentScene() {
+        if (!activeScene.mapId) {
+            alert("Сначала выбери карту!");
+            return;
+        }
+        
+        const sceneName = prompt("Введите название сцены:");
+        if (!sceneName) return;
+        
+        const objectsToSave = activeScene.objects.map(obj => ({
+            id: obj.id,
+            assetId: obj.assetId,
+            x: obj.x,
+            y: obj.y,
+            scaleX: obj.scaleX,
+            scaleY: obj.scaleY
+        }));
+        
+        const payload = {
+            scene_name: sceneName,
+            map_id: activeScene.mapId,
+            objects: objectsToSave,
+            preview_url: currentPreviewUrl || null
+        };
+        
+        try {
+            const response = await fetch("/scenes/save_scene/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.detail || "Ошибка сохранения");
+            }
+            
+            const data = await response.json();
+            
+            if (data.updated) {
+                alert(`Сцена "${sceneName}" обновлена!`);
+            } else {
+                alert(`Сцена "${sceneName}" сохранена!`);
+                currentPreviewUrl = null; // Очищаем для следующей новой сцены
+            }
+            
+        } catch (e) {
+            console.error(e);
+            alert("Ошибка: " + e.message);
         }
     }
 
@@ -1780,6 +2179,8 @@
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
                     <button id="modeBuildBtn" class="button ${sceneMode==='build'?'active':''}">Стройка</button>
                     <button id="modeTestBtn" class="button ${sceneMode==='test'?'active':''}">Тест</button>
+                    <button id="uploadPreviewBtn" class="button" style="background:#17a2b8;">🖼️ Добавить превью</button>
+                    <button id="saveSceneBtn" class="button" style="background:#28a745;">💾 Сохранить сцену</button>
                 </div>
                 <div style="display:flex">
                     <div id="sceneContent" style="flex:1"></div>
@@ -1790,9 +2191,10 @@
                 </div>
             `;
 
-            // Привязка кнопок
             document.getElementById('modeBuildBtn').onclick = () => setSceneMode('build');
             document.getElementById('modeTestBtn').onclick = () => setSceneMode('test');
+            document.getElementById('uploadPreviewBtn').onclick = () => uploadPreview();
+            document.getElementById('saveSceneBtn').onclick = () => saveCurrentScene();
 
             renderScene();
         }
@@ -1809,3 +2211,5 @@
     // -------------------------------
     switchSection('map');
 })();
+
+

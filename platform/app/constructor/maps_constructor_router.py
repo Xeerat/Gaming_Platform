@@ -2,6 +2,8 @@ from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
+from app.database import async_session_maker
+from sqlalchemy import select
 
 from app.dao.dao_models import MapDAO
 from app.constructor.validation import SMapSave
@@ -111,3 +113,21 @@ async def delete_map(
     """Удаляет карту пользователя."""
 
     return await MapDAO.delete_map(map_id=id)
+
+
+@router.get("/get_map/{map_id}/")
+async def get_map_by_id(map_id: int):
+    """Возвращает карту по ID."""
+    async with async_session_maker() as session:
+        query = select(Map).where(Map.id == map_id)
+        result = await session.execute(query)
+        map_data = result.scalar_one_or_none()
+        
+        if not map_data:
+            return JSONResponse(status_code=404, content={"detail": "Карта не найдена"})
+        
+        return {
+            "id": map_data.id,
+            "data": map_data.data,
+            "mapname": map_data.mapname
+        }

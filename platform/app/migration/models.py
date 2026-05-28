@@ -38,6 +38,11 @@ class User(Base):
         cascade="all, delete-orphan",
         lazy="selectin" 
     )
+    scenes: Mapped[list["Scene"]] = relationship(  # ← ДОБАВИТЬ
+        back_populates="owner", 
+        cascade="all, delete-orphan",
+        lazy="selectin" 
+    )
 
 
 class Map(Base):
@@ -111,3 +116,31 @@ class SpriteLogic(Base):
     __table_args__ = (
         UniqueConstraint("sprite_id", "name", name="uq_sprite_logic_name"),
     )
+
+
+class Scene(Base):
+    """ORM-модель таблицы scenes."""
+
+    __tablename__ = "scenes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    scene_name: Mapped[str] = mapped_column()
+    map_id: Mapped[int] = mapped_column(ForeignKey("maps.id"), index=True)
+    objects: Mapped[List[Dict[str, Any]]] = mapped_column(JSONB, default=list)
+    preview_url: Mapped[Optional[str]] = mapped_column(nullable=True)  # ← ДОБАВИТЬ
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=text("TIMEZONE('utc', now())")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        server_default=text("TIMEZONE('utc', now())"),
+        onupdate=text("TIMEZONE('utc', now())")
+    )
+    
+    owner: Mapped["User"] = relationship(back_populates="scenes")
+    map: Mapped["Map"] = relationship(foreign_keys=[map_id])
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "scene_name", name="uq_user_scene_name"),
+    )
+    extend_existing = True

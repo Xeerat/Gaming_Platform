@@ -2,10 +2,13 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pathlib import Path
 
 from app.users.router import router as users_router
 from app.constructor.sprites_constructor_router import router as sprites_router
 from app.constructor.maps_constructor_router import router as maps_router
+from app.constructor.game_router import router as game_router
+from app.constructor.upload import router as load_router
 
 from typing import Optional
 
@@ -15,10 +18,25 @@ app = FastAPI()
 app.include_router(users_router)
 app.include_router(sprites_router)
 app.include_router(maps_router)
+app.include_router(load_router)
+app.include_router(game_router)
 
 app.mount('/static', StaticFiles(directory="app/site/static"), name="static")
 templates = Jinja2Templates(directory="app/site/templates")
 
+uploads_dir = Path("uploads")
+uploads_dir.mkdir(exist_ok=True)
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
+@app.get("/game/{scene_id}", response_class=HTMLResponse)
+async def play_game(request: Request, scene_id: int):
+    return templates.TemplateResponse(
+        request=request,
+        name='game.html',
+        context={"request": request, "scene_id": scene_id}
+    )
 
 @app.get("/auth/register/", response_class=HTMLResponse)
 def load_page_register(request: Request, error: Optional[str] = None):
