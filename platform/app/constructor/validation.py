@@ -24,3 +24,9 @@ class SLogic(BaseModel):
     trigger_config: Optional[Dict[str, Any]] = None
     dialog_config: Optional[Dict[str, Any]] = None
     dialog_role: Optional[str] = None
+
+class SSceneSave(BaseModel):
+    scene_name: str
+    map_id: int
+    objects: List[Dict[str, Any]]
+    preview_url: Optional[str] = None

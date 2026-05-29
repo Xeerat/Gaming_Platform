@@ -2,6 +2,9 @@ from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from jose.exceptions import ExpiredSignatureError, JWTError
+from app.database import async_session_maker
+from sqlalchemy import select
+
 
 from app.dao.dao_models import SpriteDAO, SpriteLogicDAO
 from app.constructor.validation import SCharSave, SLogic
@@ -231,3 +234,21 @@ async def update_sprite_logic(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": "Ошибка базы данных при обновлении"}
         )
+
+@router.get("/get_sprite/{sprite_id}/")
+async def get_sprite_by_id(sprite_id: int):
+    """Возвращает спрайт по ID."""
+    async with async_session_maker() as session:
+        query = select(Sprite).where(Sprite.id == sprite_id)
+        result = await session.execute(query)
+        sprite = result.scalar_one_or_none()
+        
+        if not sprite:
+            return JSONResponse(status_code=404, content={"detail": "Спрайт не найден"})
+        
+        return {
+            "id": sprite.id,
+            "data": sprite.data,
+            "sprite_name": sprite.sprite_name,
+            "sprite_type": sprite.sprite_type
+        }

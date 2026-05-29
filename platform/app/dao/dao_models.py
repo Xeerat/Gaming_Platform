@@ -1,9 +1,9 @@
-from sqlalchemy import select, update, delete, insert
+from sqlalchemy import select, update, delete, insert, func
 from sqlalchemy.sql import ClauseElement
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import EmailStr
 
-from app.migration.models import User, Map, Sprite, SpriteLogic
+from app.migration.models import User, Map, Sprite, SpriteLogic, Scene
 from app.database import async_session_maker
 
 from typing import Generic, TypeVar, Type, List, Optional, Any, Dict
@@ -332,6 +332,17 @@ class MapDAO(BaseDAO[Map]):
         return await super()._find_all_data_where(
             cls.model.user_id == user_id
         )
+    @classmethod
+    async def find_map_by_id(
+        cls,
+        map_id: int,
+        user_id: int
+    ) -> Map | None:
+        """Находит карту по id и user_id."""
+        return await super()._find_data_where(
+            cls.model.id == map_id,
+            cls.model.user_id == user_id
+        )
 
 
 class SpriteDAO(BaseDAO[Sprite]):
@@ -607,3 +618,118 @@ class SpriteLogicDAO(BaseDAO[SpriteLogic]):
         return await super()._delete_data_where(
             cls.model.id == logic_id,
         )
+
+class SceneDAO(BaseDAO[Scene]):
+    """Класс взаимодействия с таблицей scenes."""
+
+    model = Scene
+
+    @classmethod
+    async def find_scene_by_name(
+        cls,
+        user_id: int,
+        scene_name: str
+    ) -> Scene | None:
+        """Находит сцену по названию."""
+        return await super()._find_data_where(
+            cls.model.user_id == user_id,
+            cls.model.scene_name == scene_name
+        )
+    
+    @classmethod
+    async def add_scene(
+        cls,
+        user_id: int,
+        scene_name: str,
+        map_id: int,
+        objects: List[Dict[str, Any]],
+        preview_url: Optional[str] = None  # ← добавить
+    ) -> Scene:
+        async with async_session_maker() as session:
+            scene = cls.model(
+                user_id=user_id,
+                scene_name=scene_name,
+                map_id=map_id,
+                objects=objects,
+                preview_url=preview_url  # ← добавить
+            )
+            session.add(scene)
+            await session.commit()
+            await session.refresh(scene)
+            return scene
+    
+    @classmethod
+    async def update_scene_by_name(
+        cls,
+        user_id: int,
+        scene_name: str,
+        map_id: int,
+        objects: List[Dict[str, Any]]
+    ) -> bool:
+        """Обновляет сцену по названию."""
+        return await super()._update_data_where(
+            cls.model.user_id == user_id,
+            cls.model.scene_name == scene_name,
+            map_id=map_id,
+            objects=objects
+        )
+    
+    @classmethod
+    async def delete_scene(
+        cls,
+        scene_id: int,
+        user_id: int
+    ) -> bool:
+        """Удаляет сцену по id."""
+        return await super()._delete_data_where(
+            cls.model.id == scene_id,
+            cls.model.user_id == user_id
+        )
+    @classmethod
+    async def update_scene_preview(
+        cls,
+        user_id: int,
+        scene_name: str,
+        preview_url: str
+    ) -> bool:
+        """Обновляет preview_url сцены по названию."""
+        return await super()._update_data_where(
+            cls.model.user_id == user_id,
+            cls.model.scene_name == scene_name,
+            preview_url=preview_url
+        )
+    
+    @classmethod
+    async def get_scene_preview(
+        cls,
+        user_id: int,
+        scene_name: str
+    ) -> Optional[str]:
+        """Получает preview_url сцены."""
+        scene = await super()._find_data_where(
+            cls.model.user_id == user_id,
+            cls.model.scene_name == scene_name
+        )
+        return scene.preview_url if scene else None
+    @classmethod
+    async def find_paginated_all(cls, skip: int, limit: int) -> tuple[list["Scene"], int]:
+        async with async_session_maker() as session:
+            query = select(cls.model).order_by(cls.model.created_at.desc()).offset(skip).limit(limit)
+            result = await session.execute(query)
+            scenes = result.scalars().all()
+            
+            total_query = select(func.count()).select_from(cls.model)
+            total = await session.execute(total_query)
+            total_count = total.scalar()
+            
+            return scenes, total_count
+        
+    @classmethod
+    async def find_scene(cls, scene_id: int, user_id: int = None) -> Scene | None:
+        """Находит сцену по id."""
+        async with async_session_maker() as session:
+            query = select(cls.model).where(cls.model.id == scene_id)
+            if user_id is not None:
+                query = query.where(cls.model.user_id == user_id)
+            result = await session.execute(query)
+            return result.scalar_one_or_none()
