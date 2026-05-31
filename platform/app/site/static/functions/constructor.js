@@ -1,50 +1,49 @@
 (() => {
-    // ------------------------------------
-    // Настройки тайлов и карты
-    // ------------------------------------
-    const tileSize = 16;
-    const tiles = [
-        {id:0, color:'#ffffff'}, // фон
-        {id:1, color:'#4caf50'}, // зелёный
-        {id:2, color:'#8bc34a'}, // светлый зелёный
-        {id:3, color:'#03a9f4'}, // голубой
-        {id:4, color:'#ffeb3b'},  // жёлтый
-        {id:5, color:'#0a0a0a'}, // почти черный (фон)
-        {id:6, color:'#1a2b2b'}, // холодный зеленовато-синий
-        {id:7, color:'#2f3e46'}, // тёмный серо-синий
-        {id:8, color:'#5c0000'}, // кровь (акцент)
-        {id:9, color:'#3a3a3a'},  // грязный серый
-        {id:10, color:'#fff0f5'}, // светло-розовый
-        {id:11, color:'#ffb6c1'}, // розовый
-        {id:12, color:'#ffdAB9'}, // персиковый
-        {id:13, color:'#e6ccff'}, // нежный фиолетовый
-        {id:14, color:'#fffacd'},  // мягкий жёлтый
-        {id:15, color:'#000000'}, // фон
-        {id:16, color:'#ff0000'}, // опасность
-        {id:17, color:'#ff8c00'}, // энергия
-        {id:18, color:'#ffff00'}, // вспышки
-        {id:19, color:'#1e90ff'},  // контрастный синий
-        {id:20, color:'#1b0033'}, // тёмный фиолетовый
-        {id:21, color:'#4b0082'}, // индиго
-        {id:22, color:'#00ffff'}, // магия (циан)
-        {id:23, color:'#7fff00'}, // кислотный зелёный
-        {id:24, color:'#ff00ff'},  // магический розовый
-        {id:25, color:'#850e3d', custom:true} // цвет по выбору пользователя
+    const tileSize = 16; // Размер тайла в пикселях
+    const tiles = [ // Палитра цветов для рисования
+        {id:0, color:'#ffffff'}, 
+        {id:1, color:'#4caf50'}, 
+        {id:2, color:'#8bc34a'}, 
+        {id:3, color:'#03a9f4'}, 
+        {id:4, color:'#ffeb3b'},  
+        {id:5, color:'#0a0a0a'}, 
+        {id:6, color:'#1a2b2b'}, 
+        {id:7, color:'#2f3e46'}, 
+        {id:8, color:'#5c0000'}, 
+        {id:9, color:'#3a3a3a'}, 
+        {id:10, color:'#fff0f5'}, 
+        {id:11, color:'#ffb6c1'}, 
+        {id:12, color:'#ffdAB9'}, 
+        {id:13, color:'#e6ccff'}, 
+        {id:14, color:'#fffacd'},  
+        {id:15, color:'#000000'},
+        {id:16, color:'#ff0000'}, 
+        {id:17, color:'#ff8c00'}, 
+        {id:18, color:'#ffff00'}, 
+        {id:19, color:'#1e90ff'},
+        {id:20, color:'#1b0033'}, 
+        {id:21, color:'#4b0082'},
+        {id:22, color:'#00ffff'}, 
+        {id:23, color:'#7fff00'},
+        {id:24, color:'#ff00ff'},
+        {id:25, color:'#850e3d', custom:true} 
     ];
 
-    let selectedTile = 1;
-    let currentCustomColor = '#850e3d';
-    let mapWidth = 90;
-    let mapHeight = 30;
-    let mapMatrix = [];
-    let graphics;
-    let phaserGame;
-    let nodes = [];
-    let selectedNodeId = null;
-    let currentLogicTarget = null;
-    const fileDataStore = new Map();
-    let selectedSpriteType = 'NPC';
+    let selectedTile = 1; // ID выбранного тайла
+    let currentCustomColor = '#850e3d'; // Текущий пользовательский цвет
+    let mapWidth = 90; // Размеры карты в тайлах
+    let mapHeight = 30; // Размеры карты в тайлах
+    let mapMatrix = [];  // Двумерный массив данных карты
+    let graphics; // Объект для рисования в Phaser
+    let phaserGame; // Экземпляр игры Phaser
+    let nodes = []; // Массив диалоговых нод
+    let selectedNodeId = null; // ID выбранной ноды
+    const fileDataStore = new Map();  // Хранилище файлов
+    let selectedSpriteType = 'NPC'; // Тип создаваемого спрайта: 'NPC' | 'Player' | 'Object'
 
+    // -------------------------------
+    // Создаёт новую диалоговую ноду и выбирает её
+    // -------------------------------
     function addNode() {
         const id = Date.now().toString();
         nodes.push({
@@ -58,24 +57,27 @@
         render();
     }
 
+    // -------------------------------
+    // Устанавливает выбранную ноду и перерисовывает интерфейс
+    // -------------------------------
     function selectNode(id) {
         selectedNodeId = id;
         render();
     }
 
-    function addChoice(node) {
-        node.choices.push({
-            text: "",
-            next: null
-        });
-        render();
-    }
-
+    // -------------------------------
+    // Перерисовывает список нод и редактор.
+    // Вызывается после изменений
+    // -------------------------------
     function render() {
         renderList();
         renderEditor();
     }
 
+    // -------------------------------
+    // Отрисовывает список диалогов в #nodeList. 
+    // Каждая нода — кликабельная карточка.
+    // -------------------------------
     function renderList() {
         const list = document.getElementById("nodeList");
         list.innerHTML = "";
@@ -89,6 +91,12 @@
         });
     }
 
+    // -------------------------------
+    // Генерирует форму редактирования выбранной ноды в #editor:
+    // - Поля: название, имена персонажей, тексты
+    // - Список реплик dialogFlow с переключателем спикера
+    // - Кнопка "Добавить вариант"
+    // -------------------------------
     function renderEditor() {
         const editor = document.getElementById("editor");
         editor.innerHTML = "";
@@ -150,6 +158,10 @@
         editor.appendChild(card);
     }
 
+    // -------------------------------
+    // Обновляет поле конкретной реплики в dialogFlow
+    // и перерисовывает редактор
+    // -------------------------------
     function updateFlow(index, field, value) {
         const node = nodes.find(n => n.id === selectedNodeId);
         if (!node) return;
@@ -161,6 +173,9 @@
         renderEditor();
     }
 
+    // -------------------------------
+    // Обновляет поле текущей ноды (не реплики)
+    // -------------------------------
     function updateField(field, value) {
         const node = nodes.find(n => n.id === selectedNodeId);
         if (!node) return;
@@ -169,6 +184,9 @@
         renderEditor(); 
     }
 
+    // -------------------------------
+    // Добавляет новую реплику в dialogFlow текущей ноды
+    // -------------------------------
     function addChoiceToCurrent() {
         const node = nodes.find(n => n.id === selectedNodeId);
         if (!node) return;
@@ -183,16 +201,9 @@
         renderEditor();
     }
 
-    function updateChoice(index, field, value) {
-        const node = nodes.find(n => n.id === selectedNodeId);
-        if (!node) return;
-
-        node.choices[index][field] = value;
-        renderEditor();
-    }
-
     // -------------------------------
     // Функция изменения яркости
+    // Изменяет яркость HEX-цвета на указанный процент (-100..100)
     // -------------------------------
     function adjustBrightness(hex, percent) {
         let num = parseInt(hex.slice(1), 16);
@@ -208,7 +219,7 @@
     }
 
     // -------------------------------
-    // Создание пустой карты
+    // Создаёт пустую матрицу карты с белыми тайлами
     // -------------------------------
     function createEmptyMap(width,height){
         return Array.from({length:height},()=> 
@@ -220,7 +231,8 @@
     }
 
     // -------------------------------
-    // Добавляем кнопки выбора размера карты
+    // Создаёт кнопки выбора размера карты(Маленькая/Средняя/Большая)
+    // и добавляет их в контейнер.
     // -------------------------------
     function createMapSizeButtons(container) {
         const sizes = [
@@ -255,7 +267,8 @@
     }
 
     // -------------------------------
-    // Рисование карты
+    // Отрисовывает карту(mapMatrix) на канвасе 
+    // Phaser через объект graphics
     // -------------------------------
     function drawMap(){
         graphics.clear();
@@ -276,6 +289,11 @@
         }
     }
 
+    // -------------------------------
+    // Рисует выбранный тайл в позиции курсора. Поддерживает:
+    // Обычные цвета из tiles
+    // Пользовательский цвет (tile id=25)
+    // -------------------------------
     function drawTile(pointer){
         const x = Math.floor(pointer.x/tileSize);
         const y = Math.floor(pointer.y/tileSize);
@@ -290,8 +308,11 @@
         }
     }
 
-    function getMap(){ return mapMatrix.map(row=>[...row]); }
+    function getMap(){ return mapMatrix.map(row=>[...row]); } // Возвращает глубокую копию mapMatrix для сохранения
 
+    // -------------------------------
+    // Асинхронно сохраняет карту на сервер
+    // -------------------------------
     async function saveMap(){
         const matrix = getMap();
         const mapName = prompt("Введите название карты:");
@@ -323,6 +344,9 @@
         }
     }
 
+    // -------------------------------
+    // Асинхронно сохраняет спрайт на сервер
+    // -------------------------------
     async function saveSprite(){
         const matrix = getMap();
         const spriteName = prompt("Введите название спрайта:");
@@ -357,13 +381,16 @@
 
     // -------------------------------
     // Палитра тайлов с слайдером
+    // Выбирает тайл для рисования
+    // Слайдер яркости для фиксированных цветов 
+    // Color picker для пользовательского цвета
+    // Кнопка "Сохранить"
     // -------------------------------
     function createPalette(container, flag){
         const paletteDiv = document.createElement('div');
         paletteDiv.id = 'palette';
         container.appendChild(paletteDiv);
 
-        // слайдер яркости
         const slider = document.createElement('input');
         slider.type = 'range';
         slider.min = -100;
@@ -450,8 +477,8 @@
             `;
             typeSelect.style.padding = '4px 8px';
             typeSelect.style.borderRadius = '4px';
-            typeSelect.style.border = '1px solid #555';
-            typeSelect.style.background = '#222';
+            typeSelect.style.border = '1px solid #667eea';
+            typeSelect.style.background = '#764ba2';
             typeSelect.style.color = '#fff';
 
             typeSelect.addEventListener('change', (e) => {
@@ -466,6 +493,7 @@
 
     // -------------------------------
     // Инициализация Phaser
+    // Создаёт/пересоздаёт экземпляр Phaser
     // -------------------------------
     function initPhaser(container){
         if(phaserGame) phaserGame.destroy(true);
@@ -509,7 +537,7 @@
     };
 
     // -------------------------------
-    // Добавление триггера
+    // Добавление функции
     // -------------------------------
     function addFunction() {
         logicData.functions.push({
@@ -524,13 +552,13 @@
     }
 
     // -------------------------------
-    // Список триггеров
+    // Отрисовывает список функций в #functionList
     // -------------------------------
     function renderFunctions() {
         const list = document.getElementById("functionList");
         if (!list) {
             console.warn("functionList not found in DOM - skipping render");
-            return;  // Просто выходим если элемента нет
+            return;  
         }
         list.innerHTML = "";
 
@@ -548,11 +576,13 @@
         });
     }
 
-    // -------------------------------
-    // Редактор триггера
-    // -------------------------------
-    let selectedFunctionIndex = null;
+    let selectedFunctionIndex = null; // Редактор функции
 
+    // -------------------------------
+    // Генерирует редактор выбранной функции:
+    // Select типа функции
+    // Динамические параметры через renderFunctionParams()
+    // -------------------------------
     function renderFunctionEditor() {
         const editor = document.getElementById("functionEditor");
         if (!editor) {
@@ -575,14 +605,18 @@
         renderFunctionParams(f);
     }
 
-    
+    // -------------------------------
+    // Рендерит поля параметров в зависимости от f.type: 
+    // movement - sprite (имя), control (wasd/arrows), speed (число); 
+    // npc - subtype, key (клавиша), dialog, player, npc; 
+    // object - subtype, player, object
+    // -------------------------------
     function renderFunctionParams(f) {
         const div = document.getElementById("functionParams");
         if (!div) return;
 
         div.innerHTML = "";
 
-        // 🚶 ХОДЬБА
         if (f.type === "movement") {
             div.innerHTML = `
                 <label>Имя спрайта</label>
@@ -601,7 +635,6 @@
             `;
         }
 
-        // 💬 NPC
         if (f.type === "npc") {
             div.innerHTML = `
                 <label>Подтип</label>
@@ -627,7 +660,6 @@
             `;
         }
 
-        // 🚧 ОБЪЕКТ
         if (f.type === "object") {
             div.innerHTML = `
                 <label>Подтип</label>
@@ -648,7 +680,8 @@
     }
 
     // -------------------------------
-    // Варианты функций
+    // Варианты функций. 
+    // Возвращает HTML-опции для select типа функции
     // -------------------------------
     function getFunctionOptions(category, selected) {
         if (category === "player") {
@@ -661,14 +694,16 @@
         return `<option value="">--</option>`;
     }
 
+    // -------------------------------
+    // Группирует функции по спрайтам и сохраняет на сервер
+    // -------------------------------
     async function saveFunctions() {
     if (!logicData.functions || logicData.functions.length === 0) {
         alert("Нет функций для сохранения!");
         return;
     }
 
-    // Группируем функции по спрайтам
-    const functionsBySprite = {};
+    const functionsBySprite = {}; // Группирует функции по спрайтам и сохраняет на сервер
     
         for (const fn of logicData.functions) {
             let targetSpriteName = null;
@@ -678,13 +713,10 @@
             } else if (fn.type === "npc") {
                 targetSpriteName = fn.params.npc;
                 
-                // ← ДОБАВЛЯЕМ: Сохраняем диалог по названию
                 const dialogName = fn.params.dialog;
                 if (dialogName) {
-                    // Ищем диалог по названию в nodes
                     const dialog = nodes.find(n => n.dialogName === dialogName);
                     if (dialog) {
-                        // Сохраняем полный диалог в params
                         fn.params.dialogData = dialog;
                         console.log(`Saved dialog "${dialogName}" to function`);
                     } else {
@@ -705,7 +737,6 @@
                 functionsBySprite[targetSpriteName] = [];
             }
             
-            // Очищаем функцию от лишнего
             const cleanedFunction = {
                 category: fn.category,
                 type: fn.type,
@@ -716,7 +747,6 @@
             functionsBySprite[targetSpriteName].push(cleanedFunction);
         }
         
-        // Сохраняем для каждого спрайта
         for (const [spriteName, functions] of Object.entries(functionsBySprite)) {
             const triggerConfig = {};
             functions.forEach((fn, index) => {
@@ -757,38 +787,16 @@
         
         alert("Логика сохранена!");
     }
-    // -------------------------------
-    // Параметры действия
-    // -------------------------------
-    function renderActionParams(t) {
-        const div = document.getElementById("actionParams");
-
-        if (t.action.type === "dialog") {
-            div.innerHTML = `
-                <label>ID ноды:</label>
-                <input value="${t.action.nodeId || ''}" 
-                    onchange="updateAction('nodeId', this.value)" />
-            `;
-        }
-
-        if (t.action.type === "music") {
-            div.innerHTML = `
-                <label>Файл:</label>
-                <input value="${t.action.src || ''}" 
-                    onchange="updateAction('src', this.value)" />
-            `;
-        }
-    }
 
     // -------------------------------
-    // Обновление данных
+    // Обновляет поле функции. 
+    // Если меняется type — сбрасывает params
     // -------------------------------
     function updateFunction(field, value) {
         const f = logicData.functions[selectedFunctionIndex];
 
         f[field] = value;
 
-        // если меняется тип — сбрасываем параметры
         if (field === "type") {
             f.params = {};
         }
@@ -797,46 +805,16 @@
         renderFunctionEditor();
     }
 
+    // -------------------------------
+    // Обновляет параметр в params текущей функции
+    // -------------------------------
     function updateParam(field, value) {
         logicData.functions[selectedFunctionIndex].params[field] = value;
     }
 
-    function runFunctions(event) {
-        logicData.functions.forEach(fn => {
-
-            //  ХОДЬБА
-            if (fn.type === "movement") {
-                if (event.type === "movement") {
-                    applyMovement(fn.params, event);
-                }
-            }
-
-            // NPC взаимодействие
-            if (fn.type === "npc") {
-                if (
-                    event.type === "npcInteraction" &&
-                    event.npc === fn.params.npc &&
-                    event.player === fn.params.player
-                ) {
-                    if (event.key === fn.params.key) {
-                        startDialog(fn.params.dialog);
-                    }
-                }
-            }
-
-            //  ОБЪЕКТЫ
-            if (fn.type === "object") {
-                if (
-                    event.type === "collision" &&
-                    event.object === fn.params.object &&
-                    event.player === fn.params.player
-                ) {
-                    blockMovement(event);
-                }
-            }
-        });
-    }
-
+    // -------------------------------
+    // Создаёт пустую функцию и сразу открывает её редактор
+    // -------------------------------
     function createFunction() {
         const fn = {
             id: Date.now().toString(),
@@ -851,16 +829,26 @@
         renderFunctionEditor();
     }
 
+    // -------------------------------
+    // Показывает кнопку "Добавить функцию" в редакторе
+    // -------------------------------
     function showFunctionCategoryPicker() {
         const editor = document.getElementById("functionEditor");
 
         editor.innerHTML = `
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="category-btn" onclick="createFunction()">🎮 Добавить функцию</button>
+                <button class="category-btn" onclick="createFunction()">Добавить функцию</button>
             </div>
         `;
     }
 
+    // -------------------------------
+    // Загружает с сервера:
+    // Все карты (/maps/get_all_maps/)
+    // Все спрайты (/sprites/get_all_sprites/)
+    // Логику для каждого спрайта (/sprites/get_sprite_logic/:name/)
+    // Рендерит список в #fileManager
+    // -------------------------------
     async function handleReload() {
         const fileManager = document.getElementById('fileManager');
         if (!fileManager) return;
@@ -874,7 +862,6 @@
             if (!spritesRes.ok) return window.location.href = '/auth/login/';
             const sprites = await spritesRes.json();
 
-            // Загружаем логику для каждого спрайта
             const spritesWithLogic = await Promise.all(
                 sprites.map(async (sprite) => {
                     try {
@@ -885,12 +872,10 @@
                             const blocks = await res.json();
                             const main = blocks.find(b => b.name === 'main') || blocks[0];
                             
-                            // Превращаем объект обратно в массив
                             let functionsArray = [];
                             const triggerConfig = main?.trigger_config;
                             
                             if (triggerConfig && typeof triggerConfig === 'object') {
-                                // Объект с ключами func_0, func_1 и т.д.
                                 functionsArray = Object.values(triggerConfig);
                             }
                             
@@ -922,13 +907,9 @@
 
     document.getElementById('reloadBtn').addEventListener('click', handleReload);
 
-    // -------------------------------
-
     window.addNode = addNode;
     window.addChoiceToCurrent = addChoiceToCurrent;
     window.updateField = updateField;
-    window.updateChoice = updateChoice;
-    window.updateAction = updateAction; 
     window.addFunction = addFunction;
     window.updateFunction = updateFunction;
     window.updateParam = updateParam;
@@ -937,6 +918,12 @@
     window.createFunction = createFunction;
     window.deleteObject = deleteObject;
 
+    // -------------------------------
+    // Отрисовывает карточки файлов с:
+    // draggable=true для drag-and-drop
+    // Data-атрибуты: fileId, fileType, fileName
+    // Клик → handleFileSelect()
+    // -------------------------------
     function renderFileList(container, files) {
         let filesContainer = container.querySelector('.files-container');
         if (!filesContainer) {
@@ -985,42 +972,43 @@
             filesContainer.appendChild(fileCard);
         });
     }
-
-    function updateAction(field, value) {
-        const t = logicData.functions[selectedFunctionIndex];
-        if (!t || !t.action) return;
-
-        t.action[field] = value;
-
-        renderActionParams(t);
-    }
     
+    // -------------------------------
+    // Обработчик выбора файла
+    // -------------------------------
     function handleFileSelect(file) {
         switch (file.fileType) {
             case 'map':
                 activeScene.mapId = file.id;
+                renderScene();
                 break;
 
             case 'sprite':
                 logicData.functions = file.functions || [];
                 selectedFunctionIndex = null;
                 
-                // Рисуем функции ТОЛЬКО если мы во вкладке логики
                 if (document.getElementById("functionList")) {
                     renderFunctions();
                 }
                 
-                addSpriteToScene(file);
+                if (sceneMode !== 'test') {
+                    addSpriteToScene(file);
+                }
                 break;
         }
     }
     
-
+    // -------------------------------
+    // Добавляет спрайт на сцену:
+    // Копирует функции в logicData
+    // Создаёт объект: {id, assetId, x:100, y:100, scaleX:1, scaleY:1}
+    // Добавляет в activeScene.objects
+    // Вызывает renderScene()
+    // -------------------------------
     function addSpriteToScene(file) {
         console.log("=== addSpriteToScene CALLED ===");
         console.log("file.functions:", file.functions);
         
-        // ОБЪЯВЛЯЕМ переменную functionsArray
         let functionsArray = [];
         
         if (file.functions) {
@@ -1038,7 +1026,6 @@
             console.log("logicData.functions updated:", logicData.functions);
         }
         
-        // СОХРАНЯЕМ функции в глобальную переменную
         if (functionsArray.length > 0) {
             logicData.functions = functionsArray;
             if (document.getElementById("functionList")) {
@@ -1071,13 +1058,20 @@
         renderScene();
     }
 
-    let activeScene = {
-        mapId: null,
-        objects: [],
-        music: null
+    let activeScene = {  // Состояние текущей сцены
+        mapId: null,      // ID выбранной карты (ссылка на карту из хранилища)
+        objects: [],      // Массив объектов на сцене (спрайты, их позиции и масштаб)
+        music: null       // Путь на фоновую музыку для сцены
     };
 
-    let selectedObject = null;
+    let selectedObject = null; // Выбранный объект для редактирования
+
+    // -------------------------------
+    // Инициализирует сцену в #sceneContent:
+    // Проверяет наличие выбранной карты
+    // Находит данные карты в fileDataStore
+    // Вызывает initScenePhaser()
+    // -------------------------------
     function renderScene() {
         console.log("=== renderScene CALLED ===");
         console.log("activeScene.mapId:", activeScene.mapId);
@@ -1112,6 +1106,12 @@
         initScenePhaser(document.getElementById('scenePhaser'), mapFile.data);
     }
 
+    // -------------------------------
+    // Генерирует текстуру спрайта из матрицы цветов:
+    // Обрезает пустые границы (белый цвет #ffffff)
+    // Масштабирует тайлы в 4 раза
+    // Создаёт текстуру с ключом sprite_${file.id}
+    // -------------------------------
     function buildSpriteTexture(scene, file) {
         const size = 4;
 
@@ -1120,7 +1120,6 @@
         let minX = Infinity, minY = Infinity;
         let maxX = -Infinity, maxY = -Infinity;
 
-        // 1. ищем границы (убираем пустоту)
         for (let y = 0; y < file.data.length; y++) {
             for (let x = 0; x < file.data[y].length; x++) {
                 const c = file.data[y][x].color;
@@ -1134,9 +1133,8 @@
             }
         }
 
-        if (maxX === -Infinity) return; // пустой спрайт
+        if (maxX === -Infinity) return; 
 
-        // 2. рисуем только нужную часть
         for (let y = minY; y <= maxY; y++) {
             for (let x = minX; x <= maxX; x++) {
                 const c = file.data[y][x].color;
@@ -1168,8 +1166,15 @@
         g.destroy();
     }
 
-    let dragging = false;
+    let dragging = false; // Булевый флаг состояния для перетаскивания объекта
 
+    // -------------------------------
+    // Создаёт Phaser-сцену для просмотра/редактирования:
+    // Рисует карту
+    // Включает физику Arcade
+    // В зависимости от sceneMode вызывает setupBuildMode() 
+    // или setupTestMode()
+    // -------------------------------
     function initScenePhaser(container, map) {
         console.log("=== initScenePhaser CALLED ===");
         console.log("container exists:", !!container);
@@ -1219,7 +1224,6 @@
                         }
                     });
 
-                    // Рисуем карту
                     const g = this.add.graphics();
                     console.log("Drawing map...");
                     
@@ -1253,6 +1257,10 @@
         phaserGame = new Phaser.Game(config);
     }
 
+    // -------------------------------
+    // Обновляет поле выбранного объекта 
+    // и синхронизирует с Phaser-спрайтом
+    // -------------------------------
     function updateObject(field, value){
 
         if (sceneMode === 'test') return;
@@ -1268,6 +1276,9 @@
         syncObject(selectedObject);
     }
 
+    // -------------------------------
+    // Устанавливает одинаковый масштаб по X и Y
+    // -------------------------------
     function setUniformScale(value){
         if (sceneMode === 'test') return;
 
@@ -1276,7 +1287,13 @@
         syncObject(selectedObject);
     }
 
-
+    // -------------------------------
+    // Удаляет выбранный объект:
+    // Уничтожает Phaser-спрайт
+    // Удаляет из activeScene.objects
+    // Сбрасывает selectedObject
+    // Перерисовывает редактор
+    // -------------------------------
     function deleteObject(){
 
         if (sceneMode === 'test') {
@@ -1309,6 +1326,11 @@
         }
     }
 
+    // -------------------------------
+    // Генерирует панель редактирования объекта:
+    // Поля: X, Y, масштаб
+    // Кнопка "Удалить объект"
+    // -------------------------------
     function renderObjectEditor(){
         const container = document.getElementById('objectFields');
         if(!container) return;
@@ -1350,6 +1372,9 @@
         };
     }
 
+    // -------------------------------
+    // Синхронизирует данные объекта с его Phaser-представлением
+    // -------------------------------
     function syncObject(obj){
         const sprite = obj._phaserRef;
         if(!sprite) return;
@@ -1364,6 +1389,11 @@
         }
     }
 
+    // -------------------------------
+    // Выполняет действие:
+    // "music" - Загружает и проигрывает аудиофайл
+    // "dialog" - Запускает диалог
+    // -------------------------------
     function runAction(action) {
         if (!phaserGame) return;
 
@@ -1394,8 +1424,14 @@
         }
     }
 
-    let isDragDropSetup = false;
+    let isDragDropSetup = false; // Флаг-предохранитель, чттобы drag-and-drop выполнится ровно один раз
 
+    // -------------------------------
+    // Инициализирует drag-and-drop для удаления файлов:
+    // dragstart: сохраняет данные файла в dataTransfer
+    // drop на #trashZone: отправляет DELETE-запрос на сервер
+    // Визуальные эффекты: классы dragging, drag-over
+    // -------------------------------
     function setupDragAndDrop() {
         if (isDragDropSetup) return;
         isDragDropSetup = true;
@@ -1464,7 +1500,6 @@
                 if (!data.id) throw new Error('Нет данных');
 
                 if (confirm(`Удалить "${data.name}"?`)) {
-                    // Формируем URL
                     const endpoint = data.type === 'map' 
                         ? `/maps/delete_map/${data.id}/` 
                         : `/sprites/delete_sprite/${data.id}/`;
@@ -1476,7 +1511,6 @@
                     })
                     .then(res => {
                         if (!res.ok) throw new Error('Ошибка сервера');
-                        // Удаляем из DOM только если сервер ответил ОК
                         const el = document.getElementById(data.uniqueId);
                         if (el) el.remove();
                     })
@@ -1498,18 +1532,22 @@
         }, 800);
     });
 
-    let sceneMode = 'build';        // 'build' | 'test'
-    let playerSprite = null;        // ссылка на игрока в тест-режиме
-    let testSceneRef = null;        // ссылка на сцену Phaser для доступа извне
+    let sceneMode = 'build'; // Переключатель контекста (build/test)
+    let playerSprite = null; // Ссылка на спрайт игрока в рантайме  
+    let testSceneRef = null; // Заготовка для прямого доступа к экземпляру сцены Phaser
 
+    // -------------------------------
+    // Переключает режим сцены:
+    // Обновляет активные кнопки
+    // Показывает/скрывает панель редактора объектов
+    // Перерисовывает сцену
+    // -------------------------------
     function setSceneMode(mode) {
          sceneMode = mode;
     
-        // Обновляем кнопки
         document.getElementById('modeBuildBtn')?.classList.toggle('active', mode==='build');
         document.getElementById('modeTestBtn')?.classList.toggle('active', mode==='test');
         
-        // Скрываем/показываем панель редактора
         const objectEditor = document.getElementById('objectEditor');
         if (objectEditor) {
             objectEditor.style.display = mode === 'test' ? 'none' : 'block';
@@ -1518,31 +1556,50 @@
         renderScene();
     }
 
+    // -------------------------------
+    // Запускает тестовый режим (обёртка над setSceneMode('test'))
     async function startTestMode() {
         
         setSceneMode('test');
     }
 
+    // -------------------------------
+    // Находит функцию управления игроком в logicData.functions
+    // -------------------------------
     function getPlayerMovementConfig() {
         return logicData.functions.find(f => 
             f.category === 'player' && f.type === 'movement'
         );
     }
 
+    // -------------------------------
+    // Возвращает параметры объектов-коллайдеров
+    // -------------------------------
     function getBlockerObjects() {
         return logicData.functions
             .filter(f => f.type === 'object')
             .map(f => f.params);
     }
 
+    // -------------------------------
+    // Возвращает параметры NPC для диалогов
+    // -------------------------------
     function getDialogNPCs() {
         return logicData.functions
-            .filter(f => f.type === 'npc')  // ← убираем проверку на category и subtype
+            .filter(f => f.type === 'npc')  
             .map(f => f.params);
     }
 
+    // -------------------------------
+    // Настраивает сцену для редактирования:
+    // Очищает старую подсветку объектов
+    // Генерирует текстуры спрайтов
+    // Отрисовывает объекты с возможностью:
+    // Клик → выделение + рамка
+    // Drag → перемещение
+    // Клик по пустоте → снятие выделения
+    // -------------------------------
     function setupBuildMode(scene) {
-        // 🔹 1. Очистка старой подсветки
         activeScene.objects.forEach(obj => {
             if (obj._highlight) {
                 obj._highlight.destroy();
@@ -1550,7 +1607,6 @@
             }
         });
 
-        // 🔹 2. Генерация текстур
         activeScene.objects.forEach(obj => {
             const file = [...fileDataStore.values()].find(f => f.id === obj.assetId && f.fileType === 'sprite');
             if (file && !scene.textures.exists(`sprite_${file.id}`)) {
@@ -1558,7 +1614,6 @@
             }  
         });
 
-        // 🔹 3. Отрисовка объектов
         activeScene.objects.forEach(obj => {
             const file = [...fileDataStore.values()].find(f => f.id === obj.assetId && f.fileType === 'sprite');
             if (!file) return;
@@ -1571,7 +1626,6 @@
             sprite.setInteractive();
             obj._phaserRef = sprite;
 
-            // 🔹 4. Подсветка выбранного объекта
             if (obj === selectedObject) {
                 const highlight = scene.add.graphics();
                 highlight.lineStyle(2, 0xffffff, 1);
@@ -1579,9 +1633,7 @@
                 obj._highlight = highlight;
             }
 
-            // 🔹 5. Клик по объекту — БЕЗ renderScene()!
             sprite.on('pointerdown', () => {
-                // Сначала убираем подсветку со всех объектов
                 activeScene.objects.forEach(o => {
                     if (o._highlight) {
                         o._highlight.destroy();
@@ -1589,29 +1641,23 @@
                     }
                 });
                 
-                // Выделяем новый объект
                 selectedObject = obj;
                 dragging = true;
                 
-                // Рисуем новую рамку
                 const highlight = scene.add.graphics();
                 highlight.lineStyle(2, 0xffffff, 1);
                 highlight.strokeRect(obj.x - 18, obj.y - 18, 36, 36);
                 obj._highlight = highlight;
                 
-                // Обновляем панель редактора
                 renderObjectEditor();
-                // ❌ НЕ вызываем renderScene() здесь!
             });
 
-            // 🔹 6. Перетаскивание — только обновление позиции
             scene.input.on('pointermove', (pointer) => {
                 if (!dragging || !selectedObject) return;
                 selectedObject.x = pointer.x;
                 selectedObject.y = pointer.y;
                 syncObject(selectedObject);
                 
-                // Обновляем позицию рамки, если есть
                 if (selectedObject._highlight) {
                     selectedObject._highlight.clear();
                     selectedObject._highlight.lineStyle(2, 0xffffff, 1);
@@ -1622,32 +1668,24 @@
                         36
                     );
                 }
-                // ❌ НЕ вызываем renderScene() здесь!
             });
 
-            // 🔹 7. Отпускание мыши
             scene.input.on('pointerup', () => {
                 dragging = false;
-                // Не сбрасываем selectedObject и не вызываем renderScene()
-                // Пусть объект остаётся выделенным, пока пользователь не кликнет в пустоту
             });
         });
         
-        // 🔹 8. Клик по пустому месту — снимаем выделение
         scene.input.on('pointerdown', (pointer) => {
-            // Если клик был не по спрайту и не по редактору
             if (!pointer.eventTarget?.closest?.('.Phaser-Canvas') && 
                 !pointer.eventTarget?.closest?.('#objectEditor')) {
                 return;
             }
             
-            // Проверяем, был ли клик по существующему спрайту
             const hitSprite = scene.children.list.find(child => 
                 child.input?.hitArea && child.input?.hitTest(pointer.x, pointer.y)
             );
             
             if (!hitSprite && !pointer.eventTarget?.closest?.('#objectEditor')) {
-                // Клик по пустому месту — снимаем выделение
                 if (selectedObject?._highlight) {
                     selectedObject._highlight.destroy();
                     delete selectedObject._highlight;
@@ -1659,6 +1697,12 @@
         });
     }
 
+    // -------------------------------
+    // Инициализирует игровую сцену:
+    // Загружает функции из объектов сцены
+    // Отрисовывает статичные объекты (кроме игрока)
+    // Вызывает initTestModeLogic()
+    // -------------------------------
     function setupTestMode(scene) {
         console.log("=== setupTestMode CALLED ===");
         console.log("logicData.functions BEFORE:", logicData.functions);
@@ -1666,17 +1710,14 @@
         loadFunctionsFromSceneObjects();
         
         console.log("logicData.functions AFTER load:", logicData.functions);
-        
-        // Получаем имя спрайта игрока из конфига
+
         const moveConfig = getPlayerMovementConfig();
         const playerSpriteName = moveConfig?.params?.sprite;
         
-        // Отрисовка объектов статично (КРОМЕ спрайта игрока)
         activeScene.objects.forEach(obj => {
             const file = [...fileDataStore.values()].find(f => f.id === obj.assetId && f.fileType === 'sprite');
             if (!file) return;
             
-            // ПРОПУСКАЕМ спрайт игрока - он будет создан отдельно
             if (file.sprite_name === playerSpriteName) {
                 console.log("Skipping player sprite, will be created separately");
                 return;
@@ -1693,10 +1734,17 @@
             obj._phaserRef = sprite;
         });
         
-        // Инициализация игрока и логики
         initTestModeLogic(scene);
     }
 
+    // -------------------------------
+    // Настраивает игровую логику:
+    // Создаёт спрайт игрока с физикой
+    // Настраивает управление (WASD/стрелки)
+    // Создаёт невидимые коллайдеры для блокирующих объектов
+    // Добавляет NPC с данными для диалогов
+    // Устанавливает scene.playerUpdate для обновления кадра
+    // -------------------------------
     function initTestModeLogic(scene) {
         console.log("=== initTestModeLogic CALLED ===");
         console.log("logicData.functions:", logicData.functions);
@@ -1715,7 +1763,6 @@
         console.log("playerSpriteName:", playerSpriteName);
         console.log("All sprites in fileDataStore:", [...fileDataStore.values()].filter(f => f.fileType === 'sprite').map(f => ({ id: f.id, name: f.sprite_name })));
         
-        // Создаём игрока
         const playerObj = activeScene.objects.find(o => {
             const file = [...fileDataStore.values()].find(f => f.id === o.assetId && f.fileType === 'sprite');
             console.log("Checking object:", o.assetId, "file:", file?.sprite_name, "vs needed:", playerSpriteName);
@@ -1741,7 +1788,6 @@
         playerSprite.body.setCollideWorldBounds(true);
         console.log("playerSprite physics added, body:", playerSprite.body);
         
-        // Управление
         scene.input.keyboard.enabled = true;
         if (controlType === 'arrows') {
             scene.cursors = scene.input.keyboard.createCursorKeys();
@@ -1756,7 +1802,6 @@
         }
         console.log("controlKeys set:", scene.controlKeys);
 
-        // Коллизии с блокирующими объектами
         const blockers = getBlockerObjects();
         logicData.functions.forEach((fn, i) => {
             console.log(`Function ${i} params:`, fn.params);
@@ -1775,7 +1820,6 @@
             console.log("Found blocker obj:", obj);
             
             if (obj) {
-                // Создаём невидимый коллайдер
                 const col = scene.add.rectangle(obj.x, obj.y, 32, 32);
                 scene.physics.add.existing(col);
                 col.body.setImmovable(true);
@@ -1792,7 +1836,6 @@
         } else {
             console.warn("No blockers found!");
         }
-        // NPC для диалогов
         const dialogNPCs = getDialogNPCs();
         console.log("Dialog NPCs found:", dialogNPCs);
         console.log("Full dialog configs:", logicData.functions.filter(f => f.type === 'npc'));
@@ -1825,7 +1868,6 @@
 
         console.log("Total NPCs in scene.npcList:", scene.npcList.length);
 
-        // Функция обновления кадра
         scene.playerUpdate = function() {
             const keys = scene.controlKeys;
             playerSprite.body.setVelocity(0);
@@ -1841,6 +1883,9 @@
         console.log("playerUpdate function assigned, speed:", speed);
     }
 
+    // -------------------------------
+    // Проверяет взаимодействие с NPC каждый кадр
+    // -------------------------------
     function checkNPCInteractions(scene) {
         if (!playerSprite || !scene.npcList) return;
         
@@ -1852,18 +1897,19 @@
             if (distance < 80 && Phaser.Input.Keyboard.JustDown(interactKey)) {
                 const dialogId = npc.getData('dialogId');
                 if (dialogId) {
-                    startDialog(dialogId); // ваша существующая функция
+                    startDialog(dialogId); 
                     break;
                 }
             }
         }
     }
 
-
+    // -------------------------------
+    // Собирает все функции из спрайтов на сцене в logicData.functions
+    // -------------------------------
     function loadFunctionsFromSceneObjects() {
         console.log("=== loadFunctionsFromSceneObjects CALLED ===");
         
-        // Собираем функции со всех спрайтов на сцене
         let allFunctions = [];
         
         for (const obj of activeScene.objects) {
@@ -1882,14 +1928,20 @@
         }
     }
 
+    let currentDialog = null; // Хранит ссылку на активный диалог
+    let currentStep = 0; // Отслеживает индекс текущей реплики для пошагового отображения
 
-    let currentDialog = null;
-    let currentStep = 0;
-
+    // -------------------------------
+    // Запускает диалог:
+    // Ищет ноду по id или dialogName
+    // Если не найдено — ищет в dialogData функций
+    // Если нет dialogFlow — создаёт из npcText/playerText
+    // Инициализирует currentDialog, currentStep
+    // Вызывает showDialogStep()
+    // -------------------------------
     function startDialog(dialogId) {
         console.log("=== startDialog CALLED ===", dialogId);
         
-        // Ищем диалог
         let dialog = nodes.find(n => n.id === dialogId || n.dialogName === dialogId);
         
         if (!dialog) {
@@ -1913,7 +1965,6 @@
         console.log("npcText:", dialog.npcText);
         console.log("playerText:", dialog.playerText);
         
-        // Если нет dialogFlow, но есть npcText - создаём простой диалог
         if ((!dialog.dialogFlow || dialog.dialogFlow.length === 0) && dialog.npcText) {
             console.log("Creating simple dialog from npcText");
             dialog.dialogFlow = [
@@ -1926,7 +1977,6 @@
         
         if (!dialog.dialogFlow || dialog.dialogFlow.length === 0) {
             console.error("Dialog has no content!");
-            // Создаём тестовый диалог
             dialog.dialogFlow = [
                 { speaker: "npc", text: dialog.npcText || "Привет!" },
                 { speaker: "player", text: dialog.playerText || "Здравствуй!" }
@@ -1939,12 +1989,18 @@
         showDialogStep();
     }
 
+    // -------------------------------
+    // Отрисовывает текущую реплику диалога:
+    // Создаёт/обновляет #dialogBox
+    // Показывает спикера и текст
+    // Устанавливает обработчик клика для перехода к следующей реплике
+    // Закрывает диалог при достижении конца
+    // -------------------------------
     function showDialogStep() {
         if (!currentDialog) return;
         
         const dialogFlow = currentDialog.dialogFlow || [];
         
-        // Если диалог закончился - закрываем
         if (currentStep >= dialogFlow.length) {
             closeDialog();
             return;
@@ -1955,7 +2011,6 @@
         const speakerName = isNPC ? (currentDialog.npcName || 'NPC') : (currentDialog.playerName || 'Игрок');
         const text = step.text || '...';
         
-        // Создаём или обновляем окно диалога
         let dialogBox = document.getElementById('dialogBox');
         if (!dialogBox) {
             dialogBox = document.createElement('div');
@@ -1983,17 +2038,18 @@
         `;
         dialogBox.style.display = 'block';
         
-        // Убираем старый обработчик и добавляем новый
         const newHandler = () => {
             currentStep++;
             showDialogStep();
         };
         
-        // Заменяем обработчик
         const oldHandler = dialogBox.onclick;
         dialogBox.onclick = newHandler;
     }
 
+    // -------------------------------
+    // Закрывает окно диалога и сбрасывает состояние
+    // -------------------------------
     function closeDialog() {
         const dialogBox = document.getElementById('dialogBox');
         if (dialogBox) {
@@ -2003,11 +2059,15 @@
         currentStep = 0;
     }
 
+    let currentPreviewUrl = null; // Для хранения URL загруженного изображения
 
-    let currentPreviewUrl = null;
-
+    // -------------------------------
+    // Открывает файловый диалог для загрузки изображения:
+    // Создаёт скрытый <input type="file">
+    // Отправляет файл на /upload/file/
+    // Сохраняет url в currentPreviewUrl
+    // -------------------------------
     async function uploadPreview() {
-        // Создаём скрытый input для выбора файла
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -2044,6 +2104,9 @@
         input.click();
     }
 
+    // -------------------------------
+    // Сохраняет сцену на сервер
+    // -------------------------------
     async function saveCurrentScene() {
         if (!activeScene.mapId) {
             alert("Сначала выбери карту!");
@@ -2088,7 +2151,7 @@
                 alert(`Сцена "${sceneName}" обновлена!`);
             } else {
                 alert(`Сцена "${sceneName}" сохранена!`);
-                currentPreviewUrl = null; // Очищаем для следующей новой сцены
+                currentPreviewUrl = null; 
             }
             
         } catch (e) {
@@ -2114,22 +2177,6 @@
             `;
             createPalette(document.getElementById('paletteContainer'), flag="map");
             createMapSizeButtons(document.getElementById('paletteContainer'));
-            // const toolContainer = document.createElement('div');
-            // toolContainer.id = 'toolContainer';
-            // toolContainer.style.margin = '10px 0';
-
-            // const drawBtn = document.createElement('button');
-            // drawBtn.textContent = '✏️';
-            // drawBtn.addEventListener('click', ()=> { currentTool = 'draw'; });
-
-            // const fillBtn = document.createElement('button');
-            // fillBtn.textContent = '🪣';
-            // fillBtn.addEventListener('click', ()=> { currentTool = 'fill'; });
-
-            // toolContainer.appendChild(drawBtn);
-            // toolContainer.appendChild(fillBtn);
-
-            // document.getElementById('paletteContainer').appendChild(toolContainer);
             initPhaser(document.getElementById('phaserContainer'));
         } else if(section==='characters'){
             container.innerHTML = `
@@ -2179,8 +2226,8 @@
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
                     <button id="modeBuildBtn" class="button ${sceneMode==='build'?'active':''}">Стройка</button>
                     <button id="modeTestBtn" class="button ${sceneMode==='test'?'active':''}">Тест</button>
-                    <button id="uploadPreviewBtn" class="button" style="background:#17a2b8;">🖼️ Добавить превью</button>
-                    <button id="saveSceneBtn" class="button" style="background:#28a745;">💾 Сохранить сцену</button>
+                    <button id="uploadPreviewBtn" class="button";">Добавить превью</button>
+                    <button id="saveSceneBtn" class="button";">Сохранить сцену</button>
                 </div>
                 <div style="display:flex">
                     <div id="sceneContent" style="flex:1"></div>
@@ -2210,6 +2257,4 @@
     // Инициализация первой секции
     // -------------------------------
     switchSection('map');
-})();
-
-
+})()
