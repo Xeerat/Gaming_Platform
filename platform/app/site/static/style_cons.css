@@ -1,4 +1,6 @@
-/* ====== СБРОС И ПЕРЕМЕННЫЕ ====== */
+/* ========================================
+   СБРОС СТИЛЕЙ И ПЕРЕМЕННЫЕ (THEME)
+   ======================================== */
 * { 
     margin: 0; 
     padding: 0; 
@@ -23,7 +25,9 @@ body {
     min-height: 100vh;
 }
 
-/* ====== HEADER ====== */
+/* ========================================
+   ШАПКА САЙТА (HEADER)
+   ======================================== */
 header {
     display: flex;
     background: var(--header-gradient);
@@ -58,7 +62,9 @@ header button.active {
     box-shadow: inset 0 0 15px rgba(255,255,255,0.1);
 }
 
-/* ====== MAIN ====== */
+/* ========================================
+   ОСНОВНОЙ КОНТЕЙНЕР (MAIN & GAME)
+   ======================================== */
 main { 
     padding: 20px;
     height: calc(100vh - 60px);
@@ -66,7 +72,6 @@ main {
     padding-bottom: 80px;
 }
 
-/* ====== GAME CONTAINER ====== */
 #gameContainer {
     width: 100%;
     height: 100%;
@@ -78,7 +83,9 @@ main {
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 
-/* ====== PALETTE ====== */
+/* ========================================
+   ПАНЕЛЬ ИНСТРУМЕНТОВ (PALETTE & TILES)
+   ======================================== */
 #palette {
     display: flex;
     margin: 15px 0;
@@ -113,41 +120,35 @@ main {
     transform: scale(1.1);
 }
 
-/* ===== BUTTON SAVE ===== */
+/* ========================================
+   КНОПКИ СОХРАНЕНИЯ (SAVE BUTTONS)
+   ======================================== */
 #saveMapBtn,
 #saveSpriteBtn {
     position: fixed;
     bottom: 30px;
-    left: 30px; /* слева снизу */
-
+    left: 30px;
     margin: 0;
     padding: 14px 28px;
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-
     color: #ffffff !important;
     text-transform: uppercase;
     letter-spacing: 1px;
-
     z-index: 1000;
-
     background: var(--btn-gradient);
     border: 2px solid rgba(255,255,255,0.3);
     border-radius: 12px;
-
     box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
     transition: all 0.3s ease;
-
     overflow: hidden;
 }
 
-/* чтобы sprite не лежал прямо на map */
 #saveSpriteBtn {
-    bottom: 90px; /* чуть выше первой кнопки */
+    bottom: 90px;
 }
 
-/* ===== HOVER / ACTIVE (ВАЖНО: правильные ID) ===== */
 #saveMapBtn:hover,
 #saveSpriteBtn:hover {
     background: var(--btn-hover-gradient);
@@ -162,7 +163,6 @@ main {
     box-shadow: 0 2px 8px rgba(118, 75, 162, 0.4);
 }
 
-/* ===== LIGHT EFFECT ===== */
 #saveMapBtn::before,
 #saveSpriteBtn::before {
     content: '';
@@ -171,12 +171,7 @@ main {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255,255,255,0.3),
-        transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
     transition: 0.5s;
 }
 
@@ -185,23 +180,12 @@ main {
     left: 100%;
 }
 
-#scene {
-    width: 100%;
-    height: 80%;
-    background: red;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    font-size: 3em;
-    font-weight: bold;
-}
-
-/* ====== Тот кто разбирается в css поправтье что надо, пожалуйста? ====== */
+/* ========================================
+   ФАЙЛОВЫЙ МЕНЕДЖЕР (FILE MANAGER)
+   ======================================== */
 #fileManager {
     display: flex;
-    justify-content: space-between;  /* Кнопки по краям, файлы между ними */
+    justify-content: space-between;
     align-items: center;
     height: 80px;
     padding: 0 20px;
@@ -211,42 +195,39 @@ main {
     backdrop-filter: blur(5px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     margin-top: 20px;
-    gap: 15px;  /* ← ДОБАВЬ это, чтобы был отступ между элементами */
+    gap: 15px;
 }
 
-/* Контейнер для файлов (между кнопками) */
 #fileManager .files-container {
     display: flex;
     gap: 10px;
-    flex: 1;  /* Занимает всё свободное место между кнопками */
+    flex: 1;
     overflow-x: auto;
     overflow-y: hidden;
     padding: 5px 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    /* НЕ должно быть position: absolute или height: 100vh! */
 }
 
 #fileManager .files-container::-webkit-scrollbar {
     display: none;
 }
 
-/* Карточка файла */
 .file-card {
     min-width: 60px;
     max-width: 60px;
-    height: 70px;  /* ← ФИКСИРОВАННАЯ ВЫСОТА */
+    height: 70px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;  /* Центрируем по вертикали */
+    justify-content: center;
     padding: 5px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
-    flex-shrink: 0;  /* Не сжиматься */
+    flex-shrink: 0;
 }
 
 .file-card:hover {
@@ -269,14 +250,15 @@ main {
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
 
-/* Кнопки */
+/* ========================================
+   КНОПКИ УПРАВЛЕНИЯ ФАЙЛАМИ (TRASH / RELOAD)
+   ======================================== */
 .trash, .reload {
-    flex-shrink: 0;  /* Не сжиматься */
+    flex-shrink: 0;
     width: 50px;
     height: 50px;
     padding: 0;
@@ -298,7 +280,6 @@ main {
     transform: scale(1.05);
 }
 
-
 .reload {
     padding: 10px 20px;
     background: var(--btn-gradient);
@@ -318,8 +299,9 @@ main {
     transform: scale(1.05);
 }
 
-/* ___________ ДО СЮДА ИДЕТ ФАЙЛ МЕНЕДЖЕР____________ */
-
+/* ========================================
+   КНОПКИ ВЫБОРА РАЗМЕРА КАРТЫ
+   ======================================== */
 #mapSizeButtons {
     margin: 15px 0;
     display: flex;
@@ -337,7 +319,7 @@ main {
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    background: var(--btn-gradient); /* основной градиент из root */
+    background: var(--btn-gradient);
     box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
     transition: all 0.3s ease;
     position: relative;
@@ -371,6 +353,9 @@ main {
     transform: translateY(-1px) scale(1.05);
 }
 
+/* ========================================
+   СПИСОК И РЕДАКТОР ДИАЛОГОВ
+   ======================================== */
 #nodeList {
     margin-top: 15px;
     max-height: 70vh;
@@ -378,7 +363,7 @@ main {
 }
 
 #nodeList .card {
-    background: rgba(118, 75, 162, 0.3); /* фиолетово-синий градиентный оттенок */
+    background: rgba(118, 75, 162, 0.3);
     padding: 10px;
     border-radius: 12px;
     margin-bottom: 10px;
@@ -392,23 +377,11 @@ main {
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     border: 2px solid #ff4fff;
 }
-main::-webkit-scrollbar,
-#nodeList::-webkit-scrollbar {
-    width: 0;  /* убираем ширину полосы прокрутки */
-    background: transparent;
-}
-
-main,
-#nodeList {
-    scrollbar-width: none; /* для Firefox */
-    -ms-overflow-style: none; /* для IE/Edge */
-}
 
 #editor {
     width: 100%;
     max-height: 80vh;
     overflow-y: auto;
-
     background: rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     padding: 15px;
@@ -428,18 +401,11 @@ main,
     font-weight: 500;
     display: block;
     margin-top: 10px;
-
     color: rgba(0, 0, 0, 0.6); 
     letter-spacing: 0.3px;
-
     font-size: 13px;
     text-transform: uppercase;
     opacity: 0.8;
-}
-
-.new-replica {
-    display: block;
-    max-width: 100%;
 }
 
 #editor .card input,
@@ -458,21 +424,6 @@ main,
 #editor .card textarea {
     resize: vertical;
     min-height: 60px;
-}
-
-#gameContainer .new-replica {
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    padding: 10px 14px;
-    font-size: 14px;
-    font-weight: 600;
-
-    background: rgba(118, 75, 162, 0.25);
-    border: 1px solid rgba(118, 75, 162, 0.5);
-    border-radius: 12px;
 }
 
 #editor .choice {
@@ -501,38 +452,29 @@ main,
     border-radius: 8px;
 }
 
-#editor .button:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    box-shadow: 0 0 20px rgba(118, 75, 162, 0.6);
-    transform: scale(1.03);
-}
-
+/* ========================================
+   ОБЩИЕ СТИЛИ КНОПОК (BUTTONS)
+   ======================================== */
 .button {
     display: inline-block;
     margin-top: 8px;
     padding: 8px 12px;
-
     font-size: 13px;
     font-weight: 500;
     color: rgba(255,255,255,0.85);
-
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 8px;
-
     cursor: pointer;
     transition: all 0.2s ease;
-
     backdrop-filter: blur(6px);
 }
 
-/* мягкий hover */
 .button:hover {
     background: rgba(255,255,255,0.15);
     border-color: rgba(255,255,255,0.3);
 }
 
-/* нажатие */
 .button:active {
     transform: scale(0.96);
 }
@@ -542,7 +484,19 @@ main,
     width: 100%;
 }
 
-/* конкретно "Добавить реплику" */
+#gameContainer .new-replica {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(118, 75, 162, 0.25);
+    border: 1px solid rgba(118, 75, 162, 0.5);
+    border-radius: 12px;
+}
+
 #gameContainer button.button:first-child {
     background: rgba(118, 75, 162, 0.25);
     border: 1px solid rgba(118, 75, 162, 0.5);
@@ -552,7 +506,15 @@ main,
     background: rgba(118, 75, 162, 0.4);
 }
 
-/* ===== LOGIC CONTAINER ===== */
+#editor .button:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    box-shadow: 0 0 20px rgba(118, 75, 162, 0.6);
+    transform: scale(1.03);
+}
+
+/* ========================================
+   РЕДАКТОР ЛОГИКИ (FUNCTIONS & TRIGGERS)
+   ======================================== */
 #triggerList {
     margin-top: 10px;
     display: flex;
@@ -563,7 +525,6 @@ main,
     padding-right: 5px;
 }
 
-/* карточка триггера */
 #triggerList .card {
     background: rgba(118, 75, 162, 0.25);
     border: 1px solid rgba(255,255,255,0.15);
@@ -584,7 +545,12 @@ main,
     border-color: rgba(255,255,255,0.3);
 }
 
-/* редактор триггера */
+#triggerList .card.active {
+    background: linear-gradient(135deg, rgba(118,75,162,0.6), rgba(0,172,193,0.4));
+    border-color: rgba(255,255,255,0.4);
+    box-shadow: 0 0 12px rgba(118,75,162,0.6);
+}
+
 #triggerEditor {
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255,255,255,0.2);
@@ -616,33 +582,6 @@ main,
     color: #000;
 }
 
-#triggerEditor hr {
-    margin: 15px 0;
-    border: none;
-    height: 1px;
-    background: rgba(255,255,255,0.2);
-}
-
-/* Активная карточка */
-#triggerList .card.active {
-    background: linear-gradient(135deg, rgba(118,75,162,0.6), rgba(0,172,193,0.4));
-    border-color: rgba(255,255,255,0.4);
-    box-shadow: 0 0 12px rgba(118,75,162,0.6);
-}
-
-/* Плавный скролл */
-#triggerList::-webkit-scrollbar,
-#triggerEditor::-webkit-scrollbar {
-    width: 6px;
-}
-
-#triggerList::-webkit-scrollbar-thumb,
-#triggerEditor::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #764ba2, #00acc1);
-    border-radius: 4px;
-}
-
-/* Фокус на инпутах */
 #triggerEditor input:focus,
 #triggerEditor select:focus {
     outline: none;
@@ -651,7 +590,19 @@ main,
     background: rgba(255,255,255,0.3);
 }
 
-/* Кнопки */
+#triggerEditor hr {
+    margin: 15px 0;
+    border: none;
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+}
+
+#triggerEditor h3 {
+    margin-top: 0;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(118,75,162,0.7);
+}
+
 #triggerEditor button {
     margin-top: 12px;
     padding: 8px 12px;
@@ -669,7 +620,6 @@ main,
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-/* Вторичная кнопка */
 #triggerEditor button.secondary {
     background: rgba(255,255,255,0.2);
 }
@@ -678,7 +628,6 @@ main,
     background: rgba(255,255,255,0.3);
 }
 
-/* Контейнер параметров (если есть) */
 #functionParams {
     margin-top: 10px;
     padding: 10px;
@@ -687,52 +636,6 @@ main,
     border: 1px solid rgba(255,255,255,0.1);
 }
 
-/* Заголовок редактора */
-#triggerEditor h3 {
-    margin-top: 0;
-    color: #fff;
-    text-shadow: 0 0 8px rgba(118,75,162,0.7);
-}
-
-/* Плавность для всех элементов */
-#triggerList .card,
-#triggerEditor input,
-#triggerEditor select,
-#triggerEditor button {
-    transition: all 0.2s ease;
-}
-
-/* Общие кнопки логики */
-#functionList button,
-#functionEditor button,
-.button {
-    margin-top: 10px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    border: 2px solid rgba(255,255,255,0.3);
-
-    background: var(--btn-gradient);        
-    color: #ffffff;
-
-    cursor: pointer;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-
-    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
-    transition: all 0.3s ease;
-}
-
-/* hover эффект */
-#functionList button:hover,
-#functionEditor button:hover,
-.button:hover {
-    background: var(--btn-hover-gradient);  
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: var(--btn-glow);
-    border-color: rgba(255,255,255,0.6);
-}
-
-/* кнопки выбора категории */
 .category-btn {
     flex: 1;
     padding: 12px;
@@ -746,7 +649,34 @@ main,
     background: linear-gradient(135deg, #764ba2, #00acc1);
 }
 
-/* ===== SCENE LAYOUT ===== */
+#functionList button,
+#functionEditor button,
+.button {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.3);
+    background: var(--btn-gradient);        
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+    transition: all 0.3s ease;
+}
+
+#functionList button:hover,
+#functionEditor button:hover,
+.button:hover {
+    background: var(--btn-hover-gradient);  
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--btn-glow);
+    border-color: rgba(255,255,255,0.6);
+}
+
+/* ========================================
+   РЕДАКТОР СЦЕНЫ (SCENE EDITOR)
+   ======================================== */
 #sceneContent {
     position: relative;
     width: 100%;
@@ -755,7 +685,6 @@ main,
     overflow: hidden;
 }
 
-/* Phaser canvas контейнер */
 #scenePhaser {
     width: 100%;
     height: 100%;
@@ -764,7 +693,6 @@ main,
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
-/* правая панель объектов */
 #objectEditor {
     background: rgba(255, 255, 255, 0.1);
     border-left: 1px solid rgba(255,255,255,0.2);
@@ -772,7 +700,6 @@ main,
     padding: 15px;
 }
 
-/* поля объекта */
 #objectFields {
     margin-top: 10px;
 }
@@ -796,22 +723,17 @@ main,
     color: #000;
 }
 
-/* кнопка запуска сцены */
 #runSceneBtn {
     position: absolute;
     bottom: 20px;
     left: 20px;
-
     padding: 12px 20px;
     border-radius: 12px;
-
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     border: 1px solid rgba(255,255,255,0.3);
-
     font-weight: 700;
     cursor: pointer;
-
     box-shadow: 0 6px 20px rgba(0,0,0,0.4);
     transition: 0.2s;
     z-index: 10;
@@ -826,7 +748,9 @@ main,
     transform: scale(0.98);
 }
 
-/* ===== DRAG-AND-DROP ДЛЯ ФАЙЛОВ ===== */
+/* ========================================
+   DRAG-AND-DROP ЭФФЕКТЫ
+   ======================================== */
 .file-card[draggable="true"] {
     cursor: grab;
     transition: transform 0.15s ease, opacity 0.15s ease;
@@ -842,48 +766,6 @@ main,
     box-shadow: 0 8px 25px rgba(0,0,0,0.4);
 }
 
-/* ===== 🗑️ КОРЗИНА (исправлено для Drag-and-Drop) ===== */
-#trashZone {
-    /* Размеры и позиционирование */
-    flex-shrink: 0;
-    width: 75px;
-    height: 75px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2em;
-    
-    /* Визуал */
-    background: rgba(255, 0, 0, 0.12);
-    border: 2px dashed rgba(255, 68, 68, 0.5);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    
-    /* 🔥 КРИТИЧНО для DnD: */
-    pointer-events: auto !important;
-    user-select: none;
-    -webkit-user-drag: none;
-    position: relative;
-    z-index: 100; /* Чтобы не перекрывалась другими элементами */
-}
-
-#trashZone:hover {
-    background: rgba(255, 0, 0, 0.25);
-    border-color: rgba(255, 68, 68, 0.8);
-    transform: scale(1.05);
-}
-
-/* 🔥 Состояние, когда файл НАД корзиной */
-#trashZone.drag-over {
-    background: rgba(255, 40, 40, 0.45) !important;
-    border: 3px solid #ff0000 !important;
-    border-style: solid;
-    box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.3), 0 0 25px rgba(255, 0, 0, 0.5);
-    transform: scale(1.12);
-}
-
-/* Анимация возврата файла */
 @keyframes returnBounce {
     0% { transform: scale(0.9); opacity: 0.7; }
     50% { transform: scale(1.05); }
@@ -894,10 +776,58 @@ main,
     animation: returnBounce 0.3s ease;
 }
 
-/* ===== КАСТОМНЫЙ СКРОЛЛ (Chrome / Edge / Safari) ===== */
-::-webkit-scrollbar {
+/* ========================================
+   КОРЗИНА (TRASH ZONE)
+   ======================================== */
+#trashZone {
+    flex-shrink: 0;
+    width: 75px;
+    height: 75px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2em;
+    background: rgba(255, 0, 0, 0.12);
+    border: 2px dashed rgba(255, 68, 68, 0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    pointer-events: auto !important;
+    user-select: none;
+    -webkit-user-drag: none;
+    position: relative;
+    z-index: 100;
+}
+
+#trashZone:hover {
+    background: rgba(255, 0, 0, 0.25);
+    border-color: rgba(255, 68, 68, 0.8);
+    transform: scale(1.05);
+}
+
+#trashZone.drag-over {
+    background: rgba(255, 40, 40, 0.45) !important;
+    border: 3px solid #ff0000 !important;
+    border-style: solid;
+    box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.3), 0 0 25px rgba(255, 0, 0, 0.5);
+    transform: scale(1.12);
+}
+
+/* ========================================
+   СКРОЛЛБАРЫ (CUSTOM SCROLLBARS)
+   ======================================== */
+main::-webkit-scrollbar,
+#nodeList::-webkit-scrollbar,
+#triggerList::-webkit-scrollbar,
+#triggerEditor::-webkit-scrollbar {
     width: 10px;
     height: 10px;
+}
+
+main,
+#nodeList {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 ::-webkit-scrollbar-track {
@@ -919,7 +849,12 @@ main,
     box-shadow: 0 0 15px rgba(118, 75, 162, 0.7);
 }
 
-/* угол скролла (где пересекаются вертикальный и горизонтальный) */
 ::-webkit-scrollbar-corner {
     background: transparent;
+}
+
+#triggerList::-webkit-scrollbar-thumb,
+#triggerEditor::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #764ba2, #00acc1);
+    border-radius: 4px;
 }
