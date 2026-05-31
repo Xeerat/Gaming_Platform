@@ -38,7 +38,7 @@ class User(Base):
         cascade="all, delete-orphan",
         lazy="selectin" 
     )
-    scenes: Mapped[list["Scene"]] = relationship(  # ← ДОБАВИТЬ
+    scenes: Mapped[list["Scene"]] = relationship(
         back_populates="owner", 
         cascade="all, delete-orphan",
         lazy="selectin" 
@@ -128,7 +128,7 @@ class Scene(Base):
     scene_name: Mapped[str] = mapped_column()
     map_id: Mapped[int] = mapped_column(ForeignKey("maps.id"), index=True)
     objects: Mapped[List[Dict[str, Any]]] = mapped_column(JSONB, default=list)
-    preview_url: Mapped[Optional[str]] = mapped_column(nullable=True)  # ← ДОБАВИТЬ
+    preview_url: Mapped[Optional[str]] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         server_default=text("TIMEZONE('utc', now())")
     )

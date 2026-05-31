@@ -643,7 +643,7 @@ class SceneDAO(BaseDAO[Scene]):
         scene_name: str,
         map_id: int,
         objects: List[Dict[str, Any]],
-        preview_url: Optional[str] = None  # ← добавить
+        preview_url: Optional[str] = None
     ) -> Scene:
         async with async_session_maker() as session:
             scene = cls.model(
@@ -651,7 +651,7 @@ class SceneDAO(BaseDAO[Scene]):
                 scene_name=scene_name,
                 map_id=map_id,
                 objects=objects,
-                preview_url=preview_url  # ← добавить
+                preview_url=preview_url 
             )
             session.add(scene)
             await session.commit()

@@ -46,7 +46,9 @@ async def save_scene(
             if not existing_scene.preview_url and not scene_data.preview_url:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"detail": "Для новой сцены необходимо добавить превью"}
+                    content={
+                        "detail": "Для новой сцены необходимо добавить превью"
+                    }
                 )
             
             # Обновляем существующую сцену
@@ -64,14 +66,20 @@ async def save_scene(
             )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"status": "ok", "message": f"Сцена '{scene_data.scene_name}' обновлена", "updated": True}
+                content={
+                    "status": "ok", 
+                    "message": f"Сцена '{scene_data.scene_name}' обновлена", 
+                    "updated": True
+                }
             )
         else:
             # Новая сцена - обязательно нужен preview
             if not scene_data.preview_url:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"detail": "Для новой сцены необходимо добавить превью"}
+                    content={
+                        "detail": "Для новой сцены необходимо добавить превью"
+                    }
                 )
             
             scene = await SceneDAO.add_scene(
@@ -83,7 +91,12 @@ async def save_scene(
             )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"status": "ok", "message": f"Сцена '{scene_data.scene_name}' сохранена", "id": scene.id, "updated": False}
+                content={
+                    "status": "ok", 
+                    "message": f"Сцена '{scene_data.scene_name}' сохранена", 
+                    "id": scene.id, 
+                    "updated": False
+                }
             )
         
     except Exception as e:
