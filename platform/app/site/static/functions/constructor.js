@@ -698,12 +698,12 @@
     // Группирует функции по спрайтам и сохраняет на сервер
     // -------------------------------
     async function saveFunctions() {
-    if (!logicData.functions || logicData.functions.length === 0) {
-        alert("Нет функций для сохранения!");
-        return;
-    }
+        if (!logicData.functions || logicData.functions.length === 0) {
+            alert("Нет функций для сохранения!");
+            return;
+        }
 
-    const functionsBySprite = {}; // Группирует функции по спрайтам и сохраняет на сервер
+        const functionsBySprite = {}; // Группирует функции по спрайтам и сохраняет на сервер
     
         for (const fn of logicData.functions) {
             let targetSpriteName = null;

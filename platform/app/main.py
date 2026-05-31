@@ -32,11 +32,19 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/game/{scene_id}", response_class=HTMLResponse)
 async def play_game(request: Request, scene_id: int):
+    """
+    Загружает страницу игры.
+    
+    Args:
+        scene_id: id нужной сцены.
+    """
+    
     return templates.TemplateResponse(
         request=request,
         name='game.html',
         context={"request": request, "scene_id": scene_id}
     )
+
 
 @app.get("/auth/register/", response_class=HTMLResponse)
 def load_page_register(request: Request, error: Optional[str] = None):
