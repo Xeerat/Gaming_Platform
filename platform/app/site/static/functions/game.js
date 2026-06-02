@@ -27,7 +27,7 @@ async function loadAndRunGame(sceneId) {
                 const spriteData = await spriteRes.json();
                 
                 // Загружаем логику спрайта
-                const logicRes = await fetch(`/sprites/get_sprite_logic/${spriteData.sprite_name}/`, { credentials: 'include' });
+                const logicRes = await fetch(`/sprites/get_sprite_logic/${spriteId}/`, { credentials: 'include' });
                 if (logicRes.ok) {
                     const blocks = await logicRes.json();
                     const main = blocks.find(b => b.name === 'main') || blocks[0];
@@ -78,9 +78,7 @@ function startGameAsTestMode(map, objects) {
         },
         scene: {
             preload: function() {},
-            create: function() {
-                // НЕ СТАВИМ BOUNDS
-                
+            create: function() {                
                 // Рисуем карту
                 const g = this.add.graphics();
                 for (let y = 0; y < map.length; y++) {
