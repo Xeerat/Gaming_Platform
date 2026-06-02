@@ -116,43 +116,19 @@ async def delete_sprite(
     return await SpriteDAO.delete_sprite(sprite_id=id)
 
 
-@router.get("/get_sprite_logic/{sprite_name}/", response_model=None)
+@router.get("/get_sprite_logic/{sprite_id}/", response_model=None)
 async def get_sprite_logic(
     request: Request,
-    sprite_name: str
+    sprite_id: int
 ) -> RedirectResponse | list[SpriteLogic] | None:
     """Возвращает все блоки логики для указанного спрайта."""
 
-    token = request.cookies.get("users_access_token")
-    if not token:
-        return redirect_message(
-            url='/auth/login/',
-            message="Пользователь не авторизован.",
-            error=True
-        )
-    
     try:
-        user_id = decode_access_token(token)
-        sprite = await SpriteDAO.find_sprite(
-            user_id=user_id,
-            sprite_name=sprite_name
-        )
-        if not sprite:
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content={"detail": "Спрайт не найден"}
-            )
         logics = await SpriteLogicDAO.find_all_sprite_logic_by_sprite(
-            sprite_id=sprite.id
+            sprite_id=sprite_id
         )
 
         return logics if logics else []
-
-    except ExpiredSignatureError:
-        message = "Истек срок годности токена." 
-    
-    except JWTError:
-        message = "Возникла ошибка при работе с токеном."
 
     except SQLAlchemyError:
         message = "Ошибка базы данных при получении логики."
